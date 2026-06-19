@@ -44,7 +44,7 @@
         </thead>
         <tbody>
           <tr 
-            v-for="(row, index) in sortedTableData" 
+            v-for="row in sortedTableData"
             :key="row.id"
             :data-id="row.id"
             :class="{
