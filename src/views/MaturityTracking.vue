@@ -49,7 +49,8 @@
             :data-id="row.id"
             :class="{
               'nearest-row': nearestEntryId === row.id && row.maturityTime,
-              'expired-row': isRowExpired(row)
+              'expired-row': isRowExpired(row),
+              'marked-row': markedIds.includes(row.id)
             }"
           >
             <td class="td-index">{{ index + 1 }}</td>
@@ -70,6 +71,12 @@
               </div>
             </td>
             <td class="td-action">
+              <van-icon
+                :name="markedIds.includes(row.id) ? 'star' : 'star-o'"
+                class="action-icon mark-icon"
+                :class="{ 'marked': markedIds.includes(row.id) }"
+                @click="toggleMark(row.id)"
+              />
               <van-icon
                 name="description"
                 class="action-icon copy-icon"
@@ -232,6 +239,7 @@ export default {
       maturityTimer: null,
       now: Date.now(),
       notifiedIds: [],
+      markedIds: [],
       showReminder: false,
       reminderName: '',
       reminderTime: '',
@@ -312,6 +320,9 @@ export default {
     },
     memoName() {
       this.saveData();
+    },
+    markedIds() {
+      this.saveData();
     }
   },
   methods: {
@@ -323,6 +334,7 @@ export default {
           this.tableData = parsed.tableData || [];
           this.nextId = parsed.nextId || 1;
           this.memoName = parsed.memoName || '';
+          this.markedIds = parsed.markedIds || [];
         }
       } catch (e) {
         console.error('加载数据失败:', e);
@@ -334,7 +346,8 @@ export default {
         const data = {
           tableData: this.tableData,
           nextId: this.nextId,
-          memoName: this.memoName
+          memoName: this.memoName,
+          markedIds: this.markedIds
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       } catch (e) {
@@ -525,6 +538,15 @@ export default {
       this.deleteRow(index);
     },
 
+    toggleMark(id) {
+      const idx = this.markedIds.indexOf(id);
+      if (idx > -1) {
+        this.markedIds.splice(idx, 1);
+      } else {
+        this.markedIds.push(id);
+      }
+    },
+
     clearExpired() {
       const expiredRows = this.tableData.filter(row => this.isRowExpired(row));
       if (expiredRows.length === 0) {
@@ -553,6 +575,7 @@ export default {
       }).then(() => {
         this.tableData = [];
         this.notifiedIds = [];
+        this.markedIds = [];
         this.$toast.success('已清除全部数据');
       }).catch(() => {});
     },
@@ -958,6 +981,34 @@ td {
 
   &:active {
     background-color: #fff3a8 !important;
+  }
+}
+
+.marked-row {
+  background-color: #fef3c7 !important;
+  border-left: 3px solid #f59e0b !important;
+
+  &:hover {
+    background-color: #fde68a !important;
+  }
+
+  &:active {
+    background-color: #fcd34d !important;
+  }
+}
+
+.mark-icon {
+  color: #d1d5db;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &.marked {
+    color: #f59e0b;
+  }
+
+  &:hover {
+    color: #f59e0b;
   }
 }
 
