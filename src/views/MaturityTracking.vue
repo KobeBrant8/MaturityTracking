@@ -10,12 +10,11 @@
             class="memo-name-input"
             placeholder="备忘姓名"
           />
-          <van-icon
+          <span
             v-if="memoName"
-            name="description"
-            style="position:absolute;right:6px;font-size:14px;color:#9ca3af;cursor:pointer;"
+            class="memo-copy-btn"
             @click="copyName(memoName)"
-          />
+          >复制</span>
         </div>
         <div class="action-btn" @click="showSearch = true">
           <van-icon name="search" class="action-icon search-icon" />
@@ -1295,6 +1294,23 @@ td {
     background: #fff;
     box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
     width: 100px;
+  }
+}
+
+.memo-copy-btn {
+  position: absolute;
+  right: 4px;
+  font-size: 10px;
+  color: #3b82f6;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #eff6ff;
+  line-height: 1;
+  white-space: nowrap;
+
+  &:active {
+    background: #dbeafe;
   }
 }
 
