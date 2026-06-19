@@ -10,6 +10,10 @@
             class="memo-name-input"
             placeholder="备忘"
           />
+          <span class="memo-copy-icon" @click="copyName(memoName)">
+            <i class="copy-icon-back"></i>
+            <i class="copy-icon-front"></i>
+          </span>
         </div>
         <div class="action-btn" @click="showSearch = true">
           <van-icon name="search" class="action-icon search-icon" />
@@ -77,11 +81,6 @@
                 class="action-icon mark-icon"
                 :class="{ 'marked': markedIds.includes(row.id) }"
                 @click.stop="toggleMark(row.id)"
-              />
-              <van-icon
-                name="description"
-                class="action-icon copy-icon"
-                @click="copyName(row.name)"
               />
               <van-icon name="delete-o" class="action-icon delete-icon" @click="deleteRowById(row.id)" />
             </td>
@@ -880,7 +879,7 @@ th {
 }
 
 .th-action {
-  width: 110px;
+  width: 80px;
   white-space: nowrap;
 }
 
@@ -907,21 +906,6 @@ td {
   font-size: 14px;
   color: #333;
   vertical-align: middle;
-}
-
-.copy-icon {
-  color: #1989fa;
-  font-size: 16px;
-  cursor: pointer;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #0570db;
-  }
-
-  &:active {
-    color: #034ea2;
-  }
 }
 
 .td-time {
@@ -1264,6 +1248,9 @@ td {
 
 .memo-name-wrapper {
   flex: 0 0 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .memo-name-input {
@@ -1271,7 +1258,7 @@ td {
   height: 28px;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  padding: 0 10px;
+  padding: 0 26px 0 10px;
   font-size: 12px;
   color: #1f2937;
   background: #f8fafc;
@@ -1288,6 +1275,46 @@ td {
     box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
     width: 100px;
   }
+}
+
+.memo-copy-icon {
+  position: absolute;
+  right: 5px;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    transform: scale(0.85);
+  }
+}
+
+.copy-icon-back,
+.copy-icon-front {
+  position: absolute;
+  border: 1.5px solid #9ca3af;
+  border-radius: 2px;
+  width: 9px;
+  height: 11px;
+}
+
+.copy-icon-back {
+  top: 0;
+  left: 0;
+}
+
+.copy-icon-front {
+  top: 3px;
+  left: 3px;
+  background: #fff;
+}
+
+.memo-copy-icon:hover .copy-icon-back,
+.memo-copy-icon:hover .copy-icon-front {
+  border-color: #3b82f6;
 }
 
 .search-bar-clear {
