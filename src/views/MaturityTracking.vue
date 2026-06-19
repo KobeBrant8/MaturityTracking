@@ -10,6 +10,12 @@
             class="memo-name-input"
             placeholder="备忘姓名"
           />
+          <van-icon
+            v-if="memoName"
+            name="description"
+            class="memo-copy-icon"
+            @click="copyName(memoName)"
+          />
         </div>
         <div class="action-btn" @click="showSearch = true">
           <van-icon name="search" class="action-icon search-icon" />
@@ -1263,6 +1269,9 @@ td {
 
 .memo-name-wrapper {
   flex: 0 0 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .memo-name-input {
@@ -1270,7 +1279,7 @@ td {
   height: 28px;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  padding: 0 10px;
+  padding: 0 26px 0 10px;
   font-size: 12px;
   color: #1f2937;
   background: #f8fafc;
@@ -1286,6 +1295,23 @@ td {
     background: #fff;
     box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
     width: 100px;
+  }
+}
+
+.memo-copy-icon {
+  position: absolute;
+  right: 6px;
+  font-size: 14px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #3b82f6;
+  }
+
+  &:active {
+    color: #1d4ed8;
   }
 }
 
