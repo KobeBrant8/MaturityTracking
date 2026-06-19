@@ -650,7 +650,7 @@ export default {
     speakRemind(name) {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      const text = (name || '未命名用户') + '已成熟';
+      const text = (name || '未命名用户') + '的作物已成熟，请立刻前往摘取';
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'zh-CN';
       utterance.rate = 1;
