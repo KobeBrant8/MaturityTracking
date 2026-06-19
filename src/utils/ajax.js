@@ -37,7 +37,6 @@ axios.interceptors.request.use(
 );
 
 axios.defaults.timeout = 300000;
-let flag = true;
 //响应拦截器即异常处理
 axios.interceptors.response.use(
   (response) => {
