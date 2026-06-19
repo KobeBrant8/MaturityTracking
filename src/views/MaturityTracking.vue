@@ -13,7 +13,7 @@
           <van-icon
             v-if="memoName"
             name="description"
-            class="memo-copy-icon"
+            style="position:absolute;right:6px;font-size:14px;color:#9ca3af;cursor:pointer;"
             @click="copyName(memoName)"
           />
         </div>
@@ -1295,23 +1295,6 @@ td {
     background: #fff;
     box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
     width: 100px;
-  }
-}
-
-.memo-copy-icon {
-  position: absolute;
-  right: 6px;
-  font-size: 14px;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #3b82f6;
-  }
-
-  &:active {
-    color: #1d4ed8;
   }
 }
 
