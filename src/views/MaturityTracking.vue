@@ -340,6 +340,8 @@ export default {
             this.$refs.searchInput.focus();
           }
         });
+      } else {
+        this.searchKeyword = '';
       }
     },
     memoName() {
