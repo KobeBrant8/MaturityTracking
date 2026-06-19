@@ -8,12 +8,8 @@
             v-model="memoName"
             type="text"
             class="memo-name-input"
-            placeholder="备忘姓名"
+            placeholder="备忘"
           />
-          <span class="memo-copy-icon" @click="copyName(memoName)">
-            <i class="copy-icon-back"></i>
-            <i class="copy-icon-front"></i>
-          </span>
         </div>
         <div class="action-btn" @click="showSearch = true">
           <van-icon name="search" class="action-icon search-icon" />
@@ -47,10 +43,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr 
+          <tr
             v-for="(row, index) in sortedTableData"
             :key="row.id"
             :data-id="row.id"
+            @dblclick="copyName(row.name)"
             :class="{
               'nearest-row': nearestEntryId === row.id && row.maturityTime,
               'expired-row': isRowExpired(row),
@@ -1267,9 +1264,6 @@ td {
 
 .memo-name-wrapper {
   flex: 0 0 auto;
-  position: relative;
-  display: flex;
-  align-items: center;
 }
 
 .memo-name-input {
@@ -1277,7 +1271,7 @@ td {
   height: 28px;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  padding: 0 26px 0 10px;
+  padding: 0 10px;
   font-size: 12px;
   color: #1f2937;
   background: #f8fafc;
@@ -1294,46 +1288,6 @@ td {
     box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
     width: 100px;
   }
-}
-
-.memo-copy-icon {
-  position: absolute;
-  right: 5px;
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:active {
-    transform: scale(0.85);
-  }
-}
-
-.copy-icon-back,
-.copy-icon-front {
-  position: absolute;
-  border: 1.5px solid #9ca3af;
-  border-radius: 2px;
-  width: 9px;
-  height: 11px;
-}
-
-.copy-icon-back {
-  top: 0;
-  left: 0;
-}
-
-.copy-icon-front {
-  top: 3px;
-  left: 3px;
-  background: #fff;
-}
-
-.memo-copy-icon:hover .copy-icon-back,
-.memo-copy-icon:hover .copy-icon-front {
-  border-color: #3b82f6;
 }
 
 .search-bar-clear {
