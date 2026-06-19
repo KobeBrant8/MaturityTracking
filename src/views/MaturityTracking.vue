@@ -36,14 +36,6 @@
       <table v-else class="data-table">
         <thead>
           <tr>
-            <th class="th-checkbox">
-              <input
-                type="checkbox"
-                class="custom-checkbox"
-                :checked="isAllSelected"
-                @change="toggleSelectAll"
-              />
-            </th>
             <th class="th-index">#</th>
             <th class="th-name">用户</th>
             <th class="th-time">成熟时间</th>
@@ -55,20 +47,11 @@
             v-for="(row, index) in sortedTableData" 
             :key="row.id"
             :data-id="row.id"
-            :class="{ 
+            :class="{
               'nearest-row': nearestEntryId === row.id && row.maturityTime,
-              'expired-row': isRowExpired(row),
-              'selected-row': selectedIds.includes(row.id)
+              'expired-row': isRowExpired(row)
             }"
           >
-            <td class="td-checkbox" @click.stop>
-              <input
-                type="checkbox"
-                class="custom-checkbox"
-                :checked="selectedIds.includes(row.id)"
-                @change="toggleSelectRow(row.id)"
-              />
-            </td>
             <td class="td-index">{{ index + 1 }}</td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
               <van-field
@@ -97,19 +80,6 @@
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <div v-if="selectedIds.length > 0" class="batch-delete-bar">
-      <div class="batch-left">
-        <input
-          type="checkbox"
-          class="custom-checkbox"
-          :checked="isAllSelected"
-          @change="toggleSelectAll"
-        />
-        <span class="select-all-text">全选 ({{ selectedIds.length }}/{{ tableData.length }})</span>
-      </div>
-      <van-icon name="delete" class="batch-delete-icon" @click="batchDelete" />
     </div>
 
     <div v-if="showSearch" class="search-overlay" @click.self="showSearch = false">
@@ -265,7 +235,6 @@ export default {
       showReminder: false,
       reminderName: '',
       reminderTime: '',
-      selectedIds: [],
       memoName: ''
     };
   },
@@ -280,9 +249,6 @@ export default {
         if (!b.maturityTime) return -1;
         return a.maturityTime.localeCompare(b.maturityTime);
       });
-    },
-    isAllSelected() {
-      return this.tableData.length > 0 && this.selectedIds.length === this.tableData.length;
     },
     nearestEntryId() {
       let minRemaining = Infinity;
@@ -559,35 +525,6 @@ export default {
       this.deleteRow(index);
     },
 
-    toggleSelectRow(id) {
-      const idx = this.selectedIds.indexOf(id);
-      if (idx > -1) {
-        this.selectedIds.splice(idx, 1);
-      } else {
-        this.selectedIds.push(id);
-      }
-    },
-
-    toggleSelectAll() {
-      if (this.isAllSelected) {
-        this.selectedIds = [];
-      } else {
-        this.selectedIds = this.tableData.map(row => row.id);
-      }
-    },
-
-    batchDelete() {
-      if (this.selectedIds.length === 0) return;
-      this.$dialog.confirm({
-        title: '批量删除',
-        message: `确定要删除选中的 ${this.selectedIds.length} 条数据吗？`
-      }).then(() => {
-        this.tableData = this.tableData.filter(row => !this.selectedIds.includes(row.id));
-        this.selectedIds = [];
-        this.$toast.success('已删除');
-      }).catch(() => {});
-    },
-
     clearExpired() {
       const expiredRows = this.tableData.filter(row => this.isRowExpired(row));
       if (expiredRows.length === 0) {
@@ -601,7 +538,6 @@ export default {
         const expiredIds = expiredRows.map(row => row.id);
         this.tableData = this.tableData.filter(row => !expiredIds.includes(row.id));
         this.notifiedIds = this.notifiedIds.filter(id => !expiredIds.includes(id));
-        this.selectedIds = this.selectedIds.filter(id => !expiredIds.includes(id));
         this.$toast.success('已清除过期数据');
       }).catch(() => {});
     },
@@ -616,7 +552,6 @@ export default {
         message: `确定要删除全部 ${this.tableData.length} 条数据吗？此操作不可恢复！`
       }).then(() => {
         this.tableData = [];
-        this.selectedIds = [];
         this.notifiedIds = [];
         this.$toast.success('已清除全部数据');
       }).catch(() => {});
@@ -925,40 +860,6 @@ th {
   white-space: nowrap;
 }
 
-.th-checkbox,
-.td-checkbox {
-  width: 44px;
-  text-align: center;
-}
-
-.custom-checkbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  appearance: none;
-  border: 2px solid #c0c4cc;
-  border-radius: 50%;
-  background-color: #fff;
-  position: relative;
-  transition: all 0.2s;
-
-  &:checked {
-    border-color: #1989fa;
-    background-color: #1989fa;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 1px;
-      left: 4px;
-      width: 4px;
-      height: 8px;
-      border: solid #fff;
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg);
-    }
-  }
-}
 
 tbody tr {
   border-bottom: 1px solid #f0f0f0;
@@ -1057,14 +958,6 @@ td {
 
   &:active {
     background-color: #fff3a8 !important;
-  }
-}
-
-.selected-row {
-  background-color: #ecf5ff !important;
-
-  &:hover {
-    background-color: #d9ecff !important;
   }
 }
 
@@ -1417,43 +1310,6 @@ td {
 @keyframes highlight {
   0% { background-color: #fef3c7; }
   100% { background-color: transparent; }
-}
-
-.batch-delete-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: #fff;
-  border-top: 1px solid #ebedf0;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
-  z-index: 100;
-
-  .batch-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .select-all-text {
-    font-size: 14px;
-    color: #333;
-  }
-}
-
-.batch-delete-icon {
-  font-size: 22px;
-  color: #ef4444;
-  cursor: pointer;
-  transition: color 0.2s;
-
-  &:active {
-    color: #b91c1c;
-  }
 }
 
 .reminder-dialog {
