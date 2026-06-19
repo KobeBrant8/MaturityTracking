@@ -10,10 +10,10 @@
             class="memo-name-input"
             placeholder="备忘姓名"
           />
-          <span
-            style="position:absolute;right:4px;font-size:10px;color:#3b82f6;cursor:pointer;padding:2px 4px;border-radius:4px;background:#eff6ff;line-height:1;white-space:nowrap;"
-            @click="copyName(memoName)"
-          >复制</span>
+          <span class="memo-copy-icon" @click="copyName(memoName)">
+            <i class="copy-icon-back"></i>
+            <i class="copy-icon-front"></i>
+          </span>
         </div>
         <div class="action-btn" @click="showSearch = true">
           <van-icon name="search" class="action-icon search-icon" />
@@ -1296,7 +1296,45 @@ td {
   }
 }
 
+.memo-copy-icon {
+  position: absolute;
+  right: 5px;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
+  &:active {
+    transform: scale(0.85);
+  }
+}
+
+.copy-icon-back,
+.copy-icon-front {
+  position: absolute;
+  border: 1.5px solid #9ca3af;
+  border-radius: 2px;
+  width: 9px;
+  height: 11px;
+}
+
+.copy-icon-back {
+  top: 0;
+  left: 0;
+}
+
+.copy-icon-front {
+  top: 3px;
+  left: 3px;
+  background: #fff;
+}
+
+.memo-copy-icon:hover .copy-icon-back,
+.memo-copy-icon:hover .copy-icon-front {
+  border-color: #3b82f6;
+}
 
 .search-bar-clear {
   font-size: 18px;
