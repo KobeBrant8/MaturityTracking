@@ -1,0 +1,107 @@
+/*css初始化*/
+
+*,
+::before,
+::after {
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+body {
+  font-size: 16px;
+  color: #272727;
+   background-color: #fff;
+  font-family: 'Helvetica Neue', Helvetica, Arial, 'Microsoft Yahei', 'Hiragino Sans GB', 'Heiti SC', 'WenQuanYi Micro Hei', sans-serif;
+}
+
+html,body{
+   height: 100%;
+}
+img,br {
+   content: normal !important;
+}
+
+ol ,ul{
+  list-style: none;
+}
+a {
+  color: #272727;
+  text-decoration: none;
+
+}
+a:hover {
+  color: #272727;
+  text-decoration: none;
+}
+input,
+textarea,
+button {
+  border: none;
+  outline: none;
+  resize: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  font-size: 1em;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-weight: normal;
+  font-size: inherit;
+}
+table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+/*字体引入*/
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+   font-size: 1em;
+}
+.iconfont:before{
+   font-size: 16px;
+   vertical-align: top;
+}
+/*公共css样式*/
+.f_left {
+  float: left;
+}
+.f_right {
+  float: right;
+}
+/*清除浮动*/
+.clearfix:before,
+.clearfix:after {
+  content: "";
+  display: table;
+}
+.clearfix:after {
+  clear: both;
+}
+.clearfix {
+  zoom: 1;
+}
+.hide {
+  display: none;
+}
+.show {
+  display: block;
+}
+.center {
+  text-align: center;
+  line-height: 3;
+  color: rgba(100, 100, 100, 0.7);
+  width: 100%;
+}
+.scroll,#app{
+  -webkit-overflow-scrolling: touch;
+}
