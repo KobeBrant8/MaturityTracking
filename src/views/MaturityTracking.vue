@@ -15,6 +15,10 @@
           <van-icon name="search" class="action-icon search-icon" />
           <span class="action-text">搜索</span>
         </div>
+        <div class="action-btn" @click="openVoicePicker">
+          <van-icon name="setting" class="action-icon voice-icon" />
+          <span class="action-text">音色</span>
+        </div>
         <div class="action-btn" @click="clearExpired">
           <van-icon name="delete-o" class="action-icon clear-expired-icon" />
           <span class="action-text">清除过期</span>
@@ -249,10 +253,6 @@
         </div>
       </div>
     </van-popup>
-
-    <div class="voice-fab" @click="openVoicePicker">
-      <van-icon name="setting" />
-    </div>
   </div>
 </template>
 
@@ -1643,26 +1643,11 @@ td {
   font-size: 18px;
 }
 
-.voice-fab {
-  position: fixed;
-  bottom: 80px;
-  right: 16px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-  cursor: pointer;
-  z-index: 50;
-  transition: transform 0.2s;
+.voice-icon {
+  color: #6b7280;
 
-  &:active {
-    transform: scale(0.9);
+  & + .action-text {
+    color: #6b7280;
   }
 }
 </style>
