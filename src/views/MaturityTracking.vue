@@ -226,6 +226,33 @@
         </div>
       </div>
     </van-popup>
+
+    <van-popup v-model="showVoicePicker" position="bottom" round>
+      <div class="voice-picker-container">
+        <div class="picker-header">
+          <span class="picker-btn picker-cancel" @click="showVoicePicker = false">取消</span>
+          <div class="picker-title">选择语音音色</div>
+          <span class="picker-btn picker-confirm" @click="showVoicePicker = false">确定</span>
+        </div>
+        <div class="voice-list">
+          <div v-if="availableVoices.length === 0" class="voice-empty">当前设备暂无可用音色</div>
+          <div
+            v-for="voice in availableVoices"
+            :key="voice.voiceURI"
+            class="voice-item"
+            :class="{ active: selectedVoiceURI === voice.voiceURI }"
+            @click="selectVoice(voice)"
+          >
+            <span class="voice-name">{{ voice.name }}</span>
+            <van-icon v-if="selectedVoiceURI === voice.voiceURI" name="success" class="voice-check" />
+          </div>
+        </div>
+      </div>
+    </van-popup>
+
+    <div class="voice-fab" @click="openVoicePicker">
+      <van-icon name="setting" />
+    </div>
   </div>
 </template>
 
@@ -249,6 +276,7 @@ export default {
     return {
       tableData: [],
       showTimePicker: false,
+      showVoicePicker: false,
       showSearch: false,
       searchKeyword: '',
       editingId: null,
@@ -266,7 +294,9 @@ export default {
       reminderName: '',
       reminderTime: '',
       selectedIds: [],
-      memoName: ''
+      memoName: '',
+      selectedVoiceURI: '',
+      availableVoices: []
     };
   },
   computed: {
@@ -311,6 +341,10 @@ export default {
   },
   mounted() {
     this.startMaturityCheck();
+    this.loadVoices();
+    if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+    }
   },
   beforeDestroy() {
     this.stopMaturityCheck();
@@ -358,6 +392,8 @@ export default {
           this.nextId = parsed.nextId || 1;
           this.memoName = parsed.memoName || '';
         }
+        const savedVoice = localStorage.getItem('maturity_selected_voice');
+        if (savedVoice) this.selectedVoiceURI = savedVoice;
       } catch (e) {
         console.error('加载数据失败:', e);
       }
@@ -720,6 +756,32 @@ export default {
       utterance.lang = 'zh-CN';
       utterance.rate = 1;
       utterance.volume = 1;
+      const voice = this.availableVoices.find(v => v.voiceURI === this.selectedVoiceURI);
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    },
+
+    loadVoices() {
+      if (!window.speechSynthesis) return;
+      const allVoices = window.speechSynthesis.getVoices();
+      this.availableVoices = allVoices.filter(v => v.lang.startsWith('zh'));
+      if (!this.selectedVoiceURI && this.availableVoices.length > 0) {
+        this.selectedVoiceURI = this.availableVoices[0].voiceURI;
+      }
+    },
+
+    openVoicePicker() {
+      this.loadVoices();
+      this.showVoicePicker = true;
+    },
+
+    selectVoice(voice) {
+      this.selectedVoiceURI = voice.voiceURI;
+      localStorage.setItem('maturity_selected_voice', voice.voiceURI);
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance('音色已切换');
+      utterance.lang = 'zh-CN';
+      utterance.voice = voice;
       window.speechSynthesis.speak(utterance);
     },
 
@@ -1532,6 +1594,75 @@ td {
 
   &:active {
     background-color: #034ea2;
+  }
+}
+
+.voice-picker-container {
+  padding-bottom: 20px;
+}
+
+.voice-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+
+.voice-empty {
+  text-align: center;
+  padding: 30px 0;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.voice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 8px;
+
+  &:active {
+    background-color: #f3f4f6;
+  }
+
+  &.active {
+    background-color: #eff6ff;
+  }
+}
+
+.voice-name {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.voice-check {
+  color: #3b82f6;
+  font-size: 18px;
+}
+
+.voice-fab {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  cursor: pointer;
+  z-index: 50;
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.9);
   }
 }
 </style>
