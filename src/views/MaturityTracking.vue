@@ -11,8 +11,7 @@
             placeholder="备忘姓名"
           />
           <span
-            v-if="memoName"
-            class="memo-copy-btn"
+            style="position:absolute;right:4px;font-size:10px;color:#3b82f6;cursor:pointer;padding:2px 4px;border-radius:4px;background:#eff6ff;line-height:1;white-space:nowrap;"
             @click="copyName(memoName)"
           >复制</span>
         </div>
@@ -1297,22 +1296,7 @@ td {
   }
 }
 
-.memo-copy-btn {
-  position: absolute;
-  right: 4px;
-  font-size: 10px;
-  color: #3b82f6;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  background: #eff6ff;
-  line-height: 1;
-  white-space: nowrap;
 
-  &:active {
-    background: #dbeafe;
-  }
-}
 
 .search-bar-clear {
   font-size: 18px;
