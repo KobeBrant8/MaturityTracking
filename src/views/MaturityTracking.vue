@@ -44,7 +44,7 @@
         </thead>
         <tbody>
           <tr 
-            v-for="row in sortedTableData"
+            v-for="(row, index) in sortedTableData"
             :key="row.id"
             :data-id="row.id"
             :class="{
@@ -60,6 +60,7 @@
                 :class="{ 'marked': markedIds.includes(row.id) }"
                 @click.stop="toggleMark(row.id)"
               />
+              <span class="td-index-num">{{ index + 1 }}</span>
             </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
               <van-field
@@ -999,6 +1000,11 @@ td {
   color: #909399;
   font-size: 12px;
   width: 40px;
+}
+
+.td-index-num {
+  display: block;
+  line-height: 1.4;
 }
 
 .mark-icon {
