@@ -705,11 +705,22 @@ export default {
     },
 
     triggerReminder(row) {
-      this.playAlertSound();
       this.reminderName = row.name || '未命名用户';
       this.reminderTime = row.maturityTime;
       this.reminderRawName = row.name || '';
       this.showReminder = true;
+      this.speakRemind(row.name);
+    },
+
+    speakRemind(name) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const text = (name || '未命名用户') + '已成熟';
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-CN';
+      utterance.rate = 1;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
     },
 
     copyReminderName() {
@@ -718,27 +729,6 @@ export default {
         return;
       }
       this.copyName(this.reminderRawName);
-    },
-
-    playAlertSound() {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, i) => {
-          const oscillator = audioCtx.createOscillator();
-          const gainNode = audioCtx.createGain();
-          oscillator.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
-          oscillator.frequency.value = freq;
-          oscillator.type = 'sine';
-          gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime + i * 0.15);
-          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.15 + 0.4);
-          oscillator.start(audioCtx.currentTime + i * 0.15);
-          oscillator.stop(audioCtx.currentTime + i * 0.15 + 0.4);
-        });
-      } catch (e) {
-        console.warn('音频播放失败:', e);
-      }
     }
   }
 };
