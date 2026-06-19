@@ -53,7 +53,14 @@
               'marked-row': markedIds.includes(row.id)
             }"
           >
-            <td class="td-index">{{ index + 1 }}</td>
+            <td class="td-index">
+              <van-icon
+                :name="markedIds.includes(row.id) ? 'star' : 'star-o'"
+                class="mark-icon"
+                :class="{ 'marked': markedIds.includes(row.id) }"
+                @click.stop="toggleMark(row.id)"
+              />
+            </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
               <van-field
                 v-model="row.name"
@@ -71,12 +78,6 @@
               </div>
             </td>
             <td class="td-action">
-              <van-icon
-                :name="markedIds.includes(row.id) ? 'star' : 'star-o'"
-                class="action-icon mark-icon"
-                :class="{ 'marked': markedIds.includes(row.id) }"
-                @click="toggleMark(row.id)"
-              />
               <van-icon
                 name="description"
                 class="action-icon copy-icon"
@@ -908,12 +909,7 @@ td {
   vertical-align: middle;
 }
 
-.td-index {
-  text-align: center;
-  color: #909399;
-  font-size: 12px;
-}
-
+.td-action {
 
 
 .copy-icon {
@@ -997,11 +993,23 @@ td {
   }
 }
 
+.td-index {
+  position: relative;
+  text-align: center;
+  color: #909399;
+  font-size: 12px;
+  width: 40px;
+}
+
 .mark-icon {
+  position: absolute;
+  top: 2px;
+  left: 2px;
   color: #d1d5db;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: color 0.2s;
+  z-index: 1;
 
   &.marked {
     color: #f59e0b;
