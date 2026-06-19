@@ -910,7 +910,7 @@ td {
 }
 
 .td-action {
-
+}
 
 .copy-icon {
   color: #1989fa;
