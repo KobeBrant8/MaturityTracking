@@ -152,6 +152,7 @@
                   placeholder="00"
                   @input="onTimeInput('hour')"
                   @keydown.enter="focusNext('minute')"
+                  @keydown.right="focusNext('minute')"
                 />
                 <span class="time-label">时</span>
               </div>
@@ -166,6 +167,8 @@
                   placeholder="00"
                   @input="onTimeInput('minute')"
                   @keydown.enter="focusNext('second')"
+                  @keydown.left="focusPrev('hour')"
+                  @keydown.right="focusNext('second')"
                 />
                 <span class="time-label">分</span>
               </div>
@@ -180,6 +183,7 @@
                   placeholder="00"
                   @input="onTimeInput('second')"
                   @keydown.enter="onTimeConfirm"
+                  @keydown.left="focusPrev('minute')"
                 />
                 <span class="time-label">秒</span>
               </div>
@@ -461,6 +465,16 @@ export default {
           this.$refs.popupMinuteInput.focus();
         } else if (field === 'second' && this.$refs.popupSecondInput) {
           this.$refs.popupSecondInput.focus();
+        }
+      });
+    },
+
+    focusPrev(field) {
+      this.$nextTick(() => {
+        if (field === 'hour' && this.$refs.popupHourInput) {
+          this.$refs.popupHourInput.focus();
+        } else if (field === 'minute' && this.$refs.popupMinuteInput) {
+          this.$refs.popupMinuteInput.focus();
         }
       });
     },
