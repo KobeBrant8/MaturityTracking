@@ -136,7 +136,7 @@
               type="text"
               class="popup-name-input"
               placeholder="请输入用户名"
-              @keydown.enter="focusNext('minute')"
+              @keydown.enter="focusNext('hour')"
             />
           </div>
           <div class="time-input-section">
@@ -461,7 +461,9 @@ export default {
 
     focusNext(field) {
       this.$nextTick(() => {
-        if (field === 'minute' && this.$refs.popupMinuteInput) {
+        if (field === 'hour' && this.$refs.popupHourInput) {
+          this.$refs.popupHourInput.focus();
+        } else if (field === 'minute' && this.$refs.popupMinuteInput) {
           this.$refs.popupMinuteInput.focus();
         } else if (field === 'second' && this.$refs.popupSecondInput) {
           this.$refs.popupSecondInput.focus();
