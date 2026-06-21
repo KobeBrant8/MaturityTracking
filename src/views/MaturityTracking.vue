@@ -327,6 +327,9 @@ export default {
     },
     markedIds() {
       this.saveData();
+    },
+    notifiedIds() {
+      this.saveData();
     }
   },
   methods: {
@@ -339,6 +342,7 @@ export default {
           this.nextId = parsed.nextId || 1;
           this.memoName = parsed.memoName || '';
           this.markedIds = parsed.markedIds || [];
+          this.notifiedIds = parsed.notifiedIds || [];
         }
       } catch (e) {
         console.error('加载数据失败:', e);
@@ -351,7 +355,8 @@ export default {
           tableData: this.tableData,
           nextId: this.nextId,
           memoName: this.memoName,
-          markedIds: this.markedIds
+          markedIds: this.markedIds,
+          notifiedIds: this.notifiedIds
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       } catch (e) {
