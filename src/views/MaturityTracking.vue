@@ -498,6 +498,7 @@ export default {
           maturityTime
         };
         this.tableData.push(newRow);
+        this.memoName = newRow.name;
       } else if (this.editingId) {
         const index = this.getOriginalIndex(this.editingId);
         if (index !== -1) {
