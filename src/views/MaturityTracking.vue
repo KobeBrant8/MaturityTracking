@@ -231,6 +231,12 @@
         </div>
       </div>
     </van-popup>
+
+    <transition name="fade">
+      <div v-if="showBackTop" class="back-top" @click="scrollToTop">
+        <van-icon name="arrow-up" />
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -270,6 +276,7 @@ export default {
       markedIds: [],
       stolenMap: {},
       expandedStolenId: null,
+      showBackTop: false,
       showReminder: false,
       reminderName: '',
       reminderTime: '',
@@ -316,9 +323,11 @@ export default {
   mounted() {
     this.startMaturityCheck();
     document.addEventListener('click', this.closeStolenPicker);
+    window.addEventListener('scroll', this.handleScroll);
   },
   beforeDestroy() {
     document.removeEventListener('click', this.closeStolenPicker);
+    window.removeEventListener('scroll', this.handleScroll);
     this.stopMaturityCheck();
   },
   watch: {
@@ -624,6 +633,14 @@ export default {
 
     closeStolenPicker() {
       this.expandedStolenId = null;
+    },
+
+    handleScroll() {
+      this.showBackTop = window.scrollY > 300;
+    },
+
+    scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
     clearExpired() {
@@ -1613,5 +1630,39 @@ td {
   &:active {
     background-color: #034ea2;
   }
+}
+
+.back-top {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #1989fa;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.4);
+  cursor: pointer;
+  z-index: 99;
+  transition: background-color 0.2s;
+
+  &:active {
+    background-color: #0570db;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
 }
 </style>
