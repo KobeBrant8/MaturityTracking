@@ -10,8 +10,13 @@ Vue.config.productionTip = false
 Vue.prototype.$ajax = ajax
 import wx from 'weixin-js-sdk'
 Vue.use(wx);
-import { Icon } from 'vant';
+import { Icon, Calendar, Popup, Field, Empty, Dialog } from 'vant';
 Vue.use(Icon);
+Vue.use(Calendar);
+Vue.use(Popup);
+Vue.use(Field);
+Vue.use(Empty);
+Vue.use(Dialog);
 
 new Vue({
   router,

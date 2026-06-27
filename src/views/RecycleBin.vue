@@ -64,14 +64,13 @@ const STORAGE_KEY = 'maturity_tracking_data';
 export default {
   name: 'RecycleBin',
   data() {
-    const today = new Date();
     return {
       deletedData: [],
-      filterDate: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+      filterDate: '',
       showCalendar: false,
-      defaultDate: today,
+      defaultDate: new Date(),
       minDate: new Date(2020, 0, 1),
-      maxDate: today
+      maxDate: new Date()
     };
   },
   computed: {
