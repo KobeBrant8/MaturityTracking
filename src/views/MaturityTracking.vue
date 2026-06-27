@@ -91,7 +91,7 @@
                   @click="selectStolen(row.id, 'orange')"
                 ></span>
               </div>
-              <span class="td-index-num">{{ getDisplayIndex(row) }}</span>
+              {{ getDisplayIndex(row) }}
             </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
               <van-field
@@ -1115,29 +1115,17 @@ td {
 }
 
 .td-index {
-  position: relative;
   text-align: center;
   color: #909399;
   font-size: 12px;
   width: 40px;
   cursor: pointer;
+  white-space: nowrap;
 
   > .stolen-dot {
-    position: absolute;
-    top: 8px;
-    left: 6px;
+    margin-right: 2px;
+    vertical-align: middle;
   }
-
-  > .stolen-popover {
-    position: absolute;
-    top: -4px;
-    left: 14px;
-  }
-}
-
-.td-index-num {
-  display: inline-block;
-  width: 100%;
 }
 
 .stolen-dot {
