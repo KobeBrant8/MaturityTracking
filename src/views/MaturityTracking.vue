@@ -1115,6 +1115,7 @@ td {
 }
 
 .td-index {
+  position: relative;
   text-align: center;
   color: #909399;
   font-size: 12px;
@@ -1125,7 +1126,6 @@ td {
   > .stolen-dot {
     margin-right: 2px;
     vertical-align: middle;
-    position: relative;
   }
 }
 
