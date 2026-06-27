@@ -1125,6 +1125,7 @@ td {
   > .stolen-dot {
     margin-right: 2px;
     vertical-align: middle;
+    position: relative;
   }
 }
 
@@ -1163,7 +1164,7 @@ td {
 
 .stolen-popover {
   position: absolute;
-  left: 10px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
