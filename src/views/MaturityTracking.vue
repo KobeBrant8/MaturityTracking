@@ -950,10 +950,10 @@ export default {
 
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 12px;
   background-color: #fff;
+  overflow-x: auto;
 
   .page-title {
     margin: 0;
@@ -965,18 +965,20 @@ export default {
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 4px;
+    flex-shrink: 0;
   }
 
   .action-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 8px;
+    padding: 2px 4px;
+    border-radius: 6px;
     transition: background-color 0.2s;
+    white-space: nowrap;
 
     &:active {
       background-color: #f3f4f6;
@@ -985,18 +987,18 @@ export default {
   }
 
   .action-icon {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .action-text {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 500;
     white-space: nowrap;
   }
 
   .recycle-entry {
     position: relative;
-    padding-right: 12px !important;
+    padding-right: 8px !important;
   }
 
   .recycle-icon {
