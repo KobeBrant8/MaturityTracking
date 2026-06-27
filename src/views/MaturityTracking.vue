@@ -58,19 +58,29 @@
               'marked-row': markedIds.includes(row.id)
             }"
           >
-            <td class="td-index">
-              <span class="stolen-area" @click.stop>
+            <td class="td-index" style="position:relative;">
+              <span
+                class="stolen-dot"
+                :class="stolenMap[row.id] || 'gray'"
+                @click.stop="toggleStolenPopover(row.id)"
+              ></span>
+              <div
+                v-if="expandedStolenId === row.id"
+                class="stolen-popover"
+                @click.stop
+              >
+                <span class="stolen-popover-arrow"></span>
                 <span
-                  v-if="expandedStolenId !== row.id"
-                  class="stolen-dot"
-                  :class="stolenMap[row.id] || 'gray'"
-                  @click="expandedStolenId = row.id"
+                  class="stolen-dot green"
+                  :class="{ active: stolenMap[row.id] === 'green' }"
+                  @click="selectStolen(row.id, 'green')"
                 ></span>
-                <span v-else class="stolen-picker">
-                  <span class="stolen-dot green" @click="selectStolen(row.id, 'green')"></span>
-                  <span class="stolen-dot orange" @click="selectStolen(row.id, 'orange')"></span>
-                </span>
-              </span>
+                <span
+                  class="stolen-dot orange"
+                  :class="{ active: stolenMap[row.id] === 'orange' }"
+                  @click="selectStolen(row.id, 'orange')"
+                ></span>
+              </div>
               {{ index + 1 }}
             </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
@@ -586,6 +596,10 @@ export default {
       this.deleteRow(index);
     },
 
+    toggleStolenPopover(id) {
+      this.expandedStolenId = this.expandedStolenId === id ? null : id;
+    },
+
     toggleMark(id) {
       const idx = this.markedIds.indexOf(id);
       if (idx > -1) {
@@ -1039,22 +1053,17 @@ td {
   cursor: pointer;
 }
 
-.stolen-area {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 2px;
-}
-
 .stolen-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.15s;
+  vertical-align: middle;
 
   &:hover {
-    transform: scale(1.3);
+    transform: scale(1.25);
   }
 
   &.gray {
@@ -1070,12 +1079,44 @@ td {
     background-color: #f97316;
     box-shadow: 0 0 4px rgba(249, 115, 22, 0.5);
   }
+
+  &.active {
+    transform: scale(1.35);
+    outline: 2px solid rgba(0, 0, 0, 0.15);
+    outline-offset: 2px;
+  }
 }
 
-.stolen-picker {
-  display: inline-flex;
+.stolen-popover {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  white-space: nowrap;
+  animation: popover-in 0.15s ease;
+}
+
+.stolen-popover-arrow {
+  display: none;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
 }
 
 .mark-icon {
