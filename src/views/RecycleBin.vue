@@ -7,12 +7,20 @@
     </div>
 
     <div v-if="deletedData.length > 0" class="recycle-filter">
-      <input
-        v-model="filterDate"
-        type="date"
-        class="filter-input"
-      />
+      <van-icon name="calendar-o" class="filter-icon" />
+      <span class="filter-label">筛选日期</span>
+      <span class="filter-value" @click="showDatePicker = true">{{ filterDate || '全部' }}</span>
       <span v-if="filterDate" class="filter-clear" @click="filterDate = ''">清除</span>
+      <van-popup v-model="showDatePicker" position="bottom" round>
+        <van-datetime-picker
+          v-model="currentDate"
+          type="date"
+          :min-date="minDate"
+          :max-date="maxDate"
+          @confirm="onDateConfirm"
+          @cancel="showDatePicker = false"
+        />
+      </van-popup>
     </div>
 
     <div v-if="deletedData.length === 0" class="recycle-empty">
@@ -56,9 +64,17 @@ const STORAGE_KEY = 'maturity_tracking_data';
 export default {
   name: 'RecycleBin',
   data() {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
     return {
       deletedData: [],
-      filterDate: ''
+      filterDate: `${y}-${m}-${d}`,
+      showDatePicker: false,
+      currentDate: today,
+      minDate: new Date(2020, 0, 1),
+      maxDate: new Date()
     };
   },
   computed: {
@@ -146,6 +162,14 @@ export default {
         this.saveData();
         this.$toast.success('回收站已清空');
       }).catch(() => {});
+    },
+    onDateConfirm(val) {
+      const y = val.getFullYear();
+      const m = String(val.getMonth() + 1).padStart(2, '0');
+      const d = String(val.getDate()).padStart(2, '0');
+      this.filterDate = `${y}-${m}-${d}`;
+      this.currentDate = val;
+      this.showDatePicker = false;
     }
   }
 };
@@ -196,17 +220,27 @@ export default {
   border-bottom: 1px solid #f0f0f0;
 }
 
-.filter-input {
+.filter-icon {
+  font-size: 16px;
+  color: #3b82f6;
+}
+
+.filter-label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.filter-value {
   flex: 1;
-  padding: 6px 10px;
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
   font-size: 13px;
   color: #333;
-  outline: none;
+  padding: 4px 8px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  cursor: pointer;
 
-  &:focus {
-    border-color: #3b82f6;
+  &:active {
+    background-color: #e5e7eb;
   }
 }
 
