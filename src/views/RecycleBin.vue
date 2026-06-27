@@ -75,12 +75,16 @@ export default {
   },
   computed: {
     filteredData() {
-      if (!this.filterDate) return this.deletedData;
-      return this.deletedData.filter(item => {
+      const list = !this.filterDate ? this.deletedData : this.deletedData.filter(item => {
         if (!item.deletedAt) return false;
         const d = new Date(item.deletedAt);
         const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         return local === this.filterDate;
+      });
+      return [...list].sort((a, b) => {
+        if (!a.deletedAt) return 1;
+        if (!b.deletedAt) return -1;
+        return new Date(b.deletedAt) - new Date(a.deletedAt);
       });
     }
   },
