@@ -8,20 +8,20 @@
 
     <div v-if="deletedData.length > 0" class="recycle-filter">
       <span class="filter-label">筛选日期</span>
+      <span class="filter-date-btn" @click="showCalendar = true">
+        <van-icon name="calendar-o" /> {{ filterDate || '选择日期' }}
+      </span>
       <span v-if="filterDate" class="filter-clear" @click="filterDate = ''">显示全部</span>
     </div>
 
-    <div v-if="deletedData.length > 0" class="calendar-wrap">
-      <van-calendar
-        :poppable="false"
-        :min-date="minDate"
-        :max-date="maxDate"
-        :default-date="defaultDate"
-        :show-confirm="false"
-        color="#3b82f6"
-        @select="onCalendarSelect"
-      />
-    </div>
+    <van-calendar
+      v-model="showCalendar"
+      :min-date="minDate"
+      :max-date="maxDate"
+      :default-date="defaultDate"
+      color="#3b82f6"
+      @confirm="onCalendarConfirm"
+    />
 
     <div v-if="deletedData.length === 0" class="recycle-empty">
       <van-icon name="info-o" size="48" color="#dcdfe6" />
@@ -68,6 +68,7 @@ export default {
     return {
       deletedData: [],
       filterDate: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+      showCalendar: false,
       defaultDate: today,
       minDate: new Date(2020, 0, 1),
       maxDate: today
@@ -161,11 +162,12 @@ export default {
         this.$toast.success('回收站已清空');
       }).catch(() => {});
     },
-    onCalendarSelect(date) {
+    onCalendarConfirm(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const d = String(date.getDate()).padStart(2, '0');
       this.filterDate = `${y}-${m}-${d}`;
+      this.showCalendar = false;
     }
   }
 };
@@ -210,7 +212,7 @@ export default {
 .recycle-filter {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 10px 16px;
   background-color: #fff;
   border-bottom: 1px solid #f0f0f0;
@@ -222,18 +224,27 @@ export default {
   color: #333;
 }
 
-.filter-clear {
+.filter-date-btn {
   font-size: 13px;
   color: #3b82f6;
+  padding: 4px 10px;
+  background-color: #f0f7ff;
+  border-radius: 14px;
   cursor: pointer;
 
-  &:hover {
-    color: #2563eb;
+  &:active {
+    background-color: #dbeafe;
   }
 }
 
-.calendar-wrap {
-  border-bottom: 1px solid #f0f0f0;
+.filter-clear {
+  font-size: 13px;
+  color: #ef4444;
+  cursor: pointer;
+
+  &:hover {
+    color: #dc2626;
+  }
 }
 
 .recycle-empty {
