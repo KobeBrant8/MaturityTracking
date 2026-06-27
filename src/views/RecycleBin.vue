@@ -9,19 +9,20 @@
     <div v-if="deletedData.length > 0" class="recycle-filter">
       <van-icon name="calendar-o" class="filter-icon" />
       <span class="filter-label">筛选日期</span>
-      <span class="filter-value" @click="showDatePicker = true">{{ filterDate || '全部' }}</span>
+      <span class="filter-value" @click.stop="showDatePicker = true">{{ filterDate || '全部' }}</span>
       <span v-if="filterDate" class="filter-clear" @click="filterDate = ''">清除</span>
-      <van-popup v-model="showDatePicker" position="bottom" round>
-        <van-datetime-picker
-          v-model="currentDate"
-          type="date"
-          :min-date="minDate"
-          :max-date="maxDate"
-          @confirm="onDateConfirm"
-          @cancel="showDatePicker = false"
-        />
-      </van-popup>
     </div>
+
+    <van-popup v-model="showDatePicker" position="bottom" round>
+      <van-datetime-picker
+        v-model="currentDate"
+        type="date"
+        :min-date="minDate"
+        :max-date="maxDate"
+        @confirm="onDateConfirm"
+        @cancel="showDatePicker = false"
+      />
+    </van-popup>
 
     <div v-if="deletedData.length === 0" class="recycle-empty">
       <van-icon name="info-o" size="48" color="#dcdfe6" />
@@ -82,7 +83,9 @@ export default {
       if (!this.filterDate) return this.deletedData;
       return this.deletedData.filter(item => {
         if (!item.deletedAt) return false;
-        return item.deletedAt.slice(0, 10) === this.filterDate;
+        const d = new Date(item.deletedAt);
+        const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return local === this.filterDate;
       });
     }
   },
