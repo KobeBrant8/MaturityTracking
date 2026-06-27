@@ -907,6 +907,7 @@ export default {
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+    margin-left: auto;
   }
 
   .action-btn {
@@ -988,30 +989,32 @@ export default {
 
 .more-popover {
   position: fixed;
-  top: 60px;
+  top: 62px;
   right: 16px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 6px 8px;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  gap: 0;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   z-index: 100;
   white-space: nowrap;
-  animation: popover-in 0.15s ease;
+  animation: more-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .more-popover-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: #333;
+  gap: 3px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: #374151;
   cursor: pointer;
-  border-radius: 16px;
-  transition: background-color 0.15s;
+  border-radius: 14px;
+  transition: background-color 0.12s ease;
 
   &:active {
     background-color: #f3f4f6;
@@ -1019,7 +1022,7 @@ export default {
 }
 
 .more-popover-icon {
-  font-size: 15px;
+  font-size: 13px;
   color: #6b7280;
 
   &.recycle {
@@ -1028,7 +1031,7 @@ export default {
 }
 
 .more-badge {
-  font-size: 10px;
+  font-size: 9px;
   color: #ef4444;
   font-weight: 600;
 }
@@ -1302,6 +1305,17 @@ td {
   to {
     opacity: 1;
     transform: translateY(-50%) scale(1);
+  }
+}
+
+@keyframes more-popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
