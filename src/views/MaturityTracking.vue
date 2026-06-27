@@ -27,6 +27,11 @@
           <van-icon name="delete" class="action-icon clear-all-icon" />
           <span class="action-text">清除全部</span>
         </div>
+        <div class="action-btn recycle-entry" @click="showRecycleBin = true">
+          <van-icon name="delete" class="action-icon recycle-icon" />
+          <span class="action-text">回收站</span>
+          <span v-if="deletedData.length > 0" class="recycle-badge">{{ deletedData.length }}</span>
+        </div>
         <div class="action-btn" @click="addRow">
           <van-icon name="add-o" class="action-icon add-icon" />
           <span class="action-text">新增</span>
@@ -987,6 +992,29 @@ export default {
     font-size: 10px;
     font-weight: 500;
     white-space: nowrap;
+  }
+
+  .recycle-entry {
+    position: relative;
+  }
+
+  .recycle-icon {
+    color: #9ca3af;
+  }
+
+  .recycle-badge {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 10px;
+    color: #fff;
+    background-color: #ef4444;
+    border-radius: 8px;
+    text-align: center;
+    padding: 0 4px;
   }
 
   .add-icon {
