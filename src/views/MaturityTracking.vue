@@ -1124,8 +1124,8 @@ td {
 
   > .stolen-dot {
     position: absolute;
-    top: 6px;
-    left: 2px;
+    top: 8px;
+    left: 6px;
   }
 
   > .stolen-popover {
