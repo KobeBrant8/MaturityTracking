@@ -58,7 +58,13 @@
               'marked-row': markedIds.includes(row.id)
             }"
           >
-            <td class="td-index">{{ index + 1 }}</td>
+            <td class="td-index" @click.stop="toggleStolen(row.id)">
+              <span
+                class="stolen-dot"
+                :class="stolenMap[row.id]"
+              ></span>
+              {{ index + 1 }}
+            </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
               <van-field
                 v-model="row.name"
@@ -244,6 +250,7 @@ export default {
       now: Date.now(),
       notifiedIds: [],
       markedIds: [],
+      stolenMap: {},
       showReminder: false,
       reminderName: '',
       reminderTime: '',
@@ -330,6 +337,12 @@ export default {
     },
     notifiedIds() {
       this.saveData();
+    },
+    stolenMap: {
+      handler() {
+        this.saveData();
+      },
+      deep: true
     }
   },
   methods: {
@@ -343,6 +356,7 @@ export default {
           this.memoName = parsed.memoName || '';
           this.markedIds = parsed.markedIds || [];
           this.notifiedIds = parsed.notifiedIds || [];
+          this.stolenMap = parsed.stolenMap || {};
         }
       } catch (e) {
         console.error('加载数据失败:', e);
@@ -356,7 +370,8 @@ export default {
           nextId: this.nextId,
           memoName: this.memoName,
           markedIds: this.markedIds,
-          notifiedIds: this.notifiedIds
+          notifiedIds: this.notifiedIds,
+          stolenMap: this.stolenMap
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       } catch (e) {
@@ -566,6 +581,17 @@ export default {
         this.markedIds.splice(idx, 1);
       } else {
         this.markedIds.push(id);
+      }
+    },
+
+    toggleStolen(id) {
+      const current = this.stolenMap[id] || '';
+      if (current === '') {
+        this.$set(this.stolenMap, id, 'green');
+      } else if (current === 'green') {
+        this.$set(this.stolenMap, id, 'orange');
+      } else {
+        this.$set(this.stolenMap, id, '');
       }
     },
 
@@ -1001,6 +1027,26 @@ td {
   color: #909399;
   font-size: 12px;
   width: 40px;
+  cursor: pointer;
+}
+
+.stolen-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 2px;
+  vertical-align: middle;
+
+  &.green {
+    background-color: #22c55e;
+    box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+  }
+
+  &.orange {
+    background-color: #f97316;
+    box-shadow: 0 0 4px rgba(249, 115, 22, 0.5);
+  }
 }
 
 .mark-icon {
