@@ -688,9 +688,9 @@ export default {
     },
 
     closeMoreActions(e) {
-      if (!this.$el.contains(e.target)) {
-        this.showMoreActions = false;
-      }
+      const moreEntry = this.$el.querySelector('.more-entry');
+      if (moreEntry && moreEntry.contains(e.target)) return;
+      this.showMoreActions = false;
     },
 
     handleClearExpired() {
@@ -988,23 +988,27 @@ export default {
   top: 100%;
   right: 0;
   margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   z-index: 50;
   white-space: nowrap;
   animation: popover-in 0.15s ease;
-  overflow: hidden;
 }
 
 .more-popover-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  font-size: 13px;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
   color: #333;
   cursor: pointer;
+  border-radius: 16px;
   transition: background-color 0.15s;
 
   &:active {
@@ -1013,7 +1017,7 @@ export default {
 }
 
 .more-popover-icon {
-  font-size: 16px;
+  font-size: 15px;
   color: #6b7280;
 
   &.recycle {
@@ -1025,7 +1029,6 @@ export default {
   font-size: 10px;
   color: #ef4444;
   font-weight: 600;
-  margin-left: auto;
 }
 
 .table-wrapper {
