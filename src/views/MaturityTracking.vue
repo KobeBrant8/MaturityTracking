@@ -1542,12 +1542,17 @@ td {
 }
 
 .highlight-row {
-  animation: highlight 2s ease;
+  animation: highlight-flash 2.5s ease;
+  border-left: 3px solid #3b82f6 !important;
 }
 
-@keyframes highlight {
-  0% { background-color: #fef3c7; }
-  100% { background-color: transparent; }
+@keyframes highlight-flash {
+  0%   { background-color: #bfdbfe; }
+  15%  { background-color: #fff; }
+  30%  { background-color: #bfdbfe; }
+  45%  { background-color: #fff; }
+  60%  { background-color: #bfdbfe; }
+  100% { background-color: transparent; border-left-color: transparent; }
 }
 
 .reminder-dialog {
