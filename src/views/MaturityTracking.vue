@@ -19,22 +19,28 @@
           <van-icon name="search" class="action-icon search-icon" />
           <span class="action-text">搜索</span>
         </div>
-        <div class="action-btn" @click="clearExpired">
-          <van-icon name="delete-o" class="action-icon clear-expired-icon" />
-          <span class="action-text">清除过期</span>
-        </div>
-        <div class="action-btn" @click="clearAll">
-          <van-icon name="delete" class="action-icon clear-all-icon" />
-          <span class="action-text">清除全部</span>
-        </div>
         <div class="action-btn" @click="addRow">
           <van-icon name="add-o" class="action-icon add-icon" />
           <span class="action-text">新增</span>
         </div>
-        <div class="action-btn recycle-entry" @click="$router.push('/recycle-bin')">
-          <van-icon name="delete" class="action-icon recycle-icon" />
-          <span class="action-text">回收站</span>
-          <span v-if="deletedData.length > 0" class="recycle-badge">{{ deletedData.length }}</span>
+        <div class="action-btn more-entry" @click.stop="showMoreActions = !showMoreActions">
+          <van-icon name="ellipsis" class="action-icon more-icon" />
+          <span class="action-text">更多</span>
+          <div v-if="showMoreActions" class="more-popover" @click.stop>
+            <div class="more-popover-item" @click="handleClearExpired">
+              <van-icon name="delete-o" class="more-popover-icon" />
+              <span>清除过期</span>
+            </div>
+            <div class="more-popover-item" @click="handleClearAll">
+              <van-icon name="delete" class="more-popover-icon" />
+              <span>清除全部</span>
+            </div>
+            <div class="more-popover-item" @click="handleRecycleBin">
+              <van-icon name="delete" class="more-popover-icon recycle" />
+              <span>回收站</span>
+              <span v-if="deletedData.length > 0" class="more-badge">{{ deletedData.length }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -70,11 +76,6 @@
                   <span class="expired-divider-line"></span>
                   <span class="expired-divider-text">已过期</span>
                   <span class="expired-divider-line"></span>
-                  <van-icon
-                    name="delete"
-                    class="recycle-bin-icon"
-                    @click.stop="$router.push('/recycle-bin')"
-                  />
                 </div>
               </td>
             </template>
@@ -298,6 +299,7 @@ export default {
       markedIds: [],
       stolenMap: {},
       deletedData: [],
+      showMoreActions: false,
       expandedStolenId: null,
       showBackTop: false,
       showReminder: false,
@@ -360,10 +362,12 @@ export default {
   mounted() {
     this.startMaturityCheck();
     document.addEventListener('click', this.closeStolenPicker);
+    document.addEventListener('click', this.closeMoreActions);
     window.addEventListener('scroll', this.handleScroll);
   },
   beforeDestroy() {
     document.removeEventListener('click', this.closeStolenPicker);
+    document.removeEventListener('click', this.closeMoreActions);
     window.removeEventListener('scroll', this.handleScroll);
     this.stopMaturityCheck();
   },
@@ -683,6 +687,27 @@ export default {
       this.expandedStolenId = null;
     },
 
+    closeMoreActions(e) {
+      if (!this.$el.contains(e.target)) {
+        this.showMoreActions = false;
+      }
+    },
+
+    handleClearExpired() {
+      this.showMoreActions = false;
+      this.clearExpired();
+    },
+
+    handleClearAll() {
+      this.showMoreActions = false;
+      this.clearAll();
+    },
+
+    handleRecycleBin() {
+      this.showMoreActions = false;
+      this.$router.push('/recycle-bin');
+    },
+
     handleScroll() {
       this.showBackTop = window.scrollY > 300;
     },
@@ -917,28 +942,12 @@ export default {
     white-space: nowrap;
   }
 
-  .recycle-entry {
+  .more-entry {
     position: relative;
-    padding-right: 8px !important;
   }
 
-  .recycle-icon {
-    color: #9ca3af;
-  }
-
-  .recycle-badge {
-    position: absolute;
-    top: -2px;
-    right: -4px;
-    min-width: 16px;
-    height: 16px;
-    line-height: 16px;
-    font-size: 10px;
-    color: #fff;
-    background-color: #ef4444;
-    border-radius: 8px;
-    text-align: center;
-    padding: 0 4px;
+  .more-icon {
+    color: #6b7280;
   }
 
   .add-icon {
@@ -972,7 +981,51 @@ export default {
       color: #8b5cf6;
     }
   }
+}
 
+.more-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  white-space: nowrap;
+  animation: popover-in 0.15s ease;
+  overflow: hidden;
+}
+
+.more-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.15s;
+
+  &:active {
+    background-color: #f3f4f6;
+  }
+}
+
+.more-popover-icon {
+  font-size: 16px;
+  color: #6b7280;
+
+  &.recycle {
+    color: #9ca3af;
+  }
+}
+
+.more-badge {
+  font-size: 10px;
+  color: #ef4444;
+  font-weight: 600;
+  margin-left: auto;
 }
 
 .table-wrapper {
@@ -1719,18 +1772,6 @@ td {
   display: flex;
   gap: 6px;
   z-index: 1;
-}
-
-.recycle-bin-icon {
-  font-size: 14px;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: color 0.2s;
-  flex-shrink: 0;
-
-  &:hover {
-    color: #ef4444;
-  }
 }
 
 .back-top {
