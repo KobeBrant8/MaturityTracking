@@ -996,6 +996,7 @@ export default {
 
   .recycle-entry {
     position: relative;
+    padding-right: 12px !important;
   }
 
   .recycle-icon {
@@ -1004,8 +1005,8 @@ export default {
 
   .recycle-badge {
     position: absolute;
-    top: 0;
-    right: 2px;
+    top: -2px;
+    right: -4px;
     min-width: 16px;
     height: 16px;
     line-height: 16px;
