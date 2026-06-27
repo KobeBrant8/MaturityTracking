@@ -279,7 +279,10 @@
         <div v-else class="recycle-bin-list">
           <div v-for="item in filteredDeletedData" :key="'del-' + item.id" class="recycle-bin-item">
             <div class="recycle-bin-item-info">
-              <span class="recycle-bin-item-name">{{ item.name || '未命名' }}</span>
+              <span class="recycle-bin-item-name">
+                <span v-if="item.stolenStatus" class="stolen-dot" :class="item.stolenStatus"></span>
+                {{ item.name || '未命名' }}
+              </span>
               <span v-if="item.maturityTime" class="recycle-bin-item-time">{{ item.maturityTime }}</span>
             </div>
             <div class="recycle-bin-item-actions">
@@ -509,7 +512,7 @@ export default {
         message: '确定要删除这条数据吗？数据将移入回收站。'
       }).then(() => {
         const row = this.tableData[index];
-        this.deletedData.push({ ...row, deletedAt: new Date().toISOString() });
+        this.deletedData.push({ ...row, deletedAt: new Date().toISOString(), stolenStatus: this.stolenMap[row.id] || '' });
         this.tableData.splice(index, 1);
         this.$toast.success('已移入回收站');
       }).catch(() => {});
@@ -751,7 +754,7 @@ export default {
         message: `确定要删除 ${expiredRows.length} 条过期数据吗？数据将移入回收站。`
       }).then(() => {
         const expiredIds = expiredRows.map(row => row.id);
-        expiredRows.forEach(row => this.deletedData.push({ ...row }));
+        expiredRows.forEach(row => this.deletedData.push({ ...row, deletedAt: new Date().toISOString(), stolenStatus: this.stolenMap[row.id] || '' }));
         this.tableData = this.tableData.filter(row => !expiredIds.includes(row.id));
         this.notifiedIds = this.notifiedIds.filter(id => !expiredIds.includes(id));
         this.$toast.success('已移入回收站');
@@ -767,7 +770,7 @@ export default {
         title: '清除全部数据',
         message: `确定要删除全部 ${this.tableData.length} 条数据吗？数据将移入回收站。`
       }).then(() => {
-        this.tableData.forEach(row => this.deletedData.push({ ...row }));
+        this.tableData.forEach(row => this.deletedData.push({ ...row, deletedAt: new Date().toISOString(), stolenStatus: this.stolenMap[row.id] || '' }));
         this.tableData = [];
         this.notifiedIds = [];
         this.markedIds = [];
@@ -779,7 +782,11 @@ export default {
       const idx = this.deletedData.findIndex(d => d.id === item.id);
       if (idx !== -1) {
         this.deletedData.splice(idx, 1);
-        this.tableData.push({ ...item });
+        const { stolenStatus, ...row } = item;
+        this.tableData.push(row);
+        if (stolenStatus) {
+          this.$set(this.stolenMap, row.id, stolenStatus);
+        }
         this.$toast.success('已恢复');
       }
     },
