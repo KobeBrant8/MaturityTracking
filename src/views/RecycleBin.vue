@@ -105,7 +105,7 @@ export default {
         const saved = localStorage.getItem(STORAGE_KEY);
         const data = saved ? JSON.parse(saved) : {};
         const tableData = data.tableData || [];
-        const { stolenStatus, deletedAt, ...row } = item;
+        const { stolenStatus, ...row } = item;
         tableData.push(row);
         data.tableData = tableData;
         if (stolenStatus) {
