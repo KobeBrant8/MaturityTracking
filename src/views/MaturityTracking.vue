@@ -27,14 +27,14 @@
           <van-icon name="delete" class="action-icon clear-all-icon" />
           <span class="action-text">清除全部</span>
         </div>
+        <div class="action-btn" @click="addRow">
+          <van-icon name="add-o" class="action-icon add-icon" />
+          <span class="action-text">新增</span>
+        </div>
         <div class="action-btn recycle-entry" @click="showRecycleBin = true">
           <van-icon name="delete" class="action-icon recycle-icon" />
           <span class="action-text">回收站</span>
           <span v-if="deletedData.length > 0" class="recycle-badge">{{ deletedData.length }}</span>
-        </div>
-        <div class="action-btn" @click="addRow">
-          <van-icon name="add-o" class="action-icon add-icon" />
-          <span class="action-text">新增</span>
         </div>
       </div>
     </div>
