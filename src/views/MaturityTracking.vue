@@ -47,10 +47,9 @@
           </tr>
         </thead>
         <tbody>
-          <template v-for="(row, index) in sortedTableData">
+          <template v-for="(row, index) in sortedTableData" :key="row.id">
           <tr
             v-if="isFirstExpiredRow(index)"
-            :key="'divider-' + row.id"
             class="expired-divider-row"
           >
             <td colspan="4">
@@ -62,7 +61,6 @@
             </td>
           </tr>
           <tr
-            :key="row.id"
             :data-id="row.id"
             @dblclick="copyName(row.name)"
             :class="{
