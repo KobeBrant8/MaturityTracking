@@ -65,6 +65,11 @@
                   <span class="expired-divider-line"></span>
                   <span class="expired-divider-text">已过期</span>
                   <span class="expired-divider-line"></span>
+                  <van-icon
+                    name="delete"
+                    class="recycle-bin-icon"
+                    @click.stop="showRecycleBin = true"
+                  />
                 </div>
               </td>
             </template>
@@ -244,6 +249,35 @@
       </div>
     </van-popup>
 
+    <van-popup v-model="showRecycleBin" position="bottom" round :style="{ maxHeight: '70vh' }">
+      <div class="recycle-bin">
+        <div class="recycle-bin-header">
+          <span class="recycle-bin-title">回收站</span>
+          <span class="recycle-bin-count">{{ deletedData.length }} 条数据</span>
+          <van-icon name="cross" class="recycle-bin-close" @click="showRecycleBin = false" />
+        </div>
+        <div v-if="deletedData.length === 0" class="recycle-bin-empty">
+          <van-icon name="info-o" size="40" color="#dcdfe6" />
+          <p>回收站为空</p>
+        </div>
+        <div v-else class="recycle-bin-list">
+          <div v-for="item in deletedData" :key="'del-' + item.id" class="recycle-bin-item">
+            <div class="recycle-bin-item-info">
+              <span class="recycle-bin-item-name">{{ item.name || '未命名' }}</span>
+              <span v-if="item.maturityTime" class="recycle-bin-item-time">{{ item.maturityTime }}</span>
+            </div>
+            <div class="recycle-bin-item-actions">
+              <van-icon name="replay" class="recycle-action restore" @click="restoreItem(item)" />
+              <van-icon name="delete-o" class="recycle-action permanent" @click="permanentDelete(item)" />
+            </div>
+          </div>
+        </div>
+        <div v-if="deletedData.length > 0" class="recycle-bin-footer">
+          <span class="recycle-bin-clear" @click="permanentClearAll">清空回收站</span>
+        </div>
+      </div>
+    </van-popup>
+
     <transition name="fade">
       <div v-if="showBackTop" class="back-top" @click="scrollToTop">
         <van-icon name="arrow-up" />
@@ -287,8 +321,10 @@ export default {
       notifiedIds: [],
       markedIds: [],
       stolenMap: {},
+      deletedData: [],
       expandedStolenId: null,
       showBackTop: false,
+      showRecycleBin: false,
       showReminder: false,
       reminderRowId: null,
       reminderName: '',
@@ -399,6 +435,12 @@ export default {
         this.saveData();
       },
       deep: true
+    },
+    deletedData: {
+      handler() {
+        this.saveData();
+      },
+      deep: true
     }
   },
   methods: {
@@ -413,6 +455,7 @@ export default {
           this.markedIds = parsed.markedIds || [];
           this.notifiedIds = parsed.notifiedIds || [];
           this.stolenMap = parsed.stolenMap || {};
+          this.deletedData = parsed.deletedData || [];
         }
       } catch (e) {
         console.error('加载数据失败:', e);
@@ -427,7 +470,8 @@ export default {
           memoName: this.memoName,
           markedIds: this.markedIds,
           notifiedIds: this.notifiedIds,
-          stolenMap: this.stolenMap
+          stolenMap: this.stolenMap,
+          deletedData: this.deletedData
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       } catch (e) {
@@ -438,9 +482,12 @@ export default {
     deleteRow(index) {
       this.$dialog.confirm({
         title: '确认删除',
-        message: '确定要删除这条数据吗？'
+        message: '确定要删除这条数据吗？数据将移入回收站。'
       }).then(() => {
+        const row = this.tableData[index];
+        this.deletedData.push({ ...row });
         this.tableData.splice(index, 1);
+        this.$toast.success('已移入回收站');
       }).catch(() => {});
     },
 
@@ -677,12 +724,13 @@ export default {
       }
       this.$dialog.confirm({
         title: '清除过期数据',
-        message: `确定要删除 ${expiredRows.length} 条过期数据吗？`
+        message: `确定要删除 ${expiredRows.length} 条过期数据吗？数据将移入回收站。`
       }).then(() => {
         const expiredIds = expiredRows.map(row => row.id);
+        expiredRows.forEach(row => this.deletedData.push({ ...row }));
         this.tableData = this.tableData.filter(row => !expiredIds.includes(row.id));
         this.notifiedIds = this.notifiedIds.filter(id => !expiredIds.includes(id));
-        this.$toast.success('已清除过期数据');
+        this.$toast.success('已移入回收站');
       }).catch(() => {});
     },
 
@@ -693,12 +741,43 @@ export default {
       }
       this.$dialog.confirm({
         title: '清除全部数据',
-        message: `确定要删除全部 ${this.tableData.length} 条数据吗？此操作不可恢复！`
+        message: `确定要删除全部 ${this.tableData.length} 条数据吗？数据将移入回收站。`
       }).then(() => {
+        this.tableData.forEach(row => this.deletedData.push({ ...row }));
         this.tableData = [];
         this.notifiedIds = [];
         this.markedIds = [];
-        this.$toast.success('已清除全部数据');
+        this.$toast.success('已移入回收站');
+      }).catch(() => {});
+    },
+
+    restoreItem(item) {
+      const idx = this.deletedData.findIndex(d => d.id === item.id);
+      if (idx !== -1) {
+        this.deletedData.splice(idx, 1);
+        this.tableData.push({ ...item });
+        this.$toast.success('已恢复');
+      }
+    },
+
+    permanentDelete(item) {
+      this.$dialog.confirm({
+        title: '永久删除',
+        message: `确定要永久删除 "${item.name || '未命名'}" 吗？`
+      }).then(() => {
+        const idx = this.deletedData.findIndex(d => d.id === item.id);
+        if (idx !== -1) this.deletedData.splice(idx, 1);
+        this.$toast.success('已永久删除');
+      }).catch(() => {});
+    },
+
+    permanentClearAll() {
+      this.$dialog.confirm({
+        title: '清空回收站',
+        message: `确定要永久删除全部 ${this.deletedData.length} 条数据吗？此操作不可恢复！`
+      }).then(() => {
+        this.deletedData = [];
+        this.$toast.success('回收站已清空');
       }).catch(() => {});
     },
 
@@ -1669,6 +1748,139 @@ td {
   display: flex;
   gap: 6px;
   z-index: 1;
+}
+
+.recycle-bin-icon {
+  font-size: 14px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #ef4444;
+  }
+}
+
+.recycle-bin {
+  padding: 0;
+}
+
+.recycle-bin-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.recycle-bin-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.recycle-bin-count {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-right: 12px;
+}
+
+.recycle-bin-close {
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.recycle-bin-empty {
+  padding: 40px 0;
+  text-align: center;
+  color: #9ca3af;
+
+  p {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+}
+
+.recycle-bin-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.recycle-bin-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.recycle-bin-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.recycle-bin-item-name {
+  font-size: 14px;
+  color: #333;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recycle-bin-item-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.recycle-bin-item-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.recycle-action {
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.15s;
+
+  &:active {
+    transform: scale(0.85);
+  }
+
+  &.restore {
+    color: #3b82f6;
+
+    &:hover {
+      color: #2563eb;
+    }
+  }
+
+  &.permanent {
+    color: #ef4444;
+
+    &:hover {
+      color: #dc2626;
+    }
+  }
+}
+
+.recycle-bin-footer {
+  padding: 12px 20px;
+  text-align: center;
+  border-top: 1px solid #f0f0f0;
+}
+
+.recycle-bin-clear {
+  font-size: 13px;
+  color: #ef4444;
+  cursor: pointer;
+
+  &:hover {
+    color: #dc2626;
+  }
 }
 
 .back-top {
