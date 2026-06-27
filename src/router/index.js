@@ -10,6 +10,12 @@ const routes = [
     component: () => import( /* webpackChunkName: "maturity-tracking" */ '@/views/MaturityTracking.vue'),
     meta: { title:"成熟时间追踪"}
   },
+  {
+    path: '/recycle-bin',
+    name: 'RecycleBin',
+    component: () => import( /* webpackChunkName: "recycle-bin" */ '@/views/RecycleBin.vue'),
+    meta: { title:"回收站"}
+  },
 ]
 
 const router = new VueRouter({

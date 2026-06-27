@@ -31,7 +31,7 @@
           <van-icon name="add-o" class="action-icon add-icon" />
           <span class="action-text">新增</span>
         </div>
-        <div class="action-btn recycle-entry" @click="showRecycleBin = true">
+        <div class="action-btn recycle-entry" @click="$router.push('/recycle-bin')">
           <van-icon name="delete" class="action-icon recycle-icon" />
           <span class="action-text">回收站</span>
           <span v-if="deletedData.length > 0" class="recycle-badge">{{ deletedData.length }}</span>
@@ -73,7 +73,7 @@
                   <van-icon
                     name="delete"
                     class="recycle-bin-icon"
-                    @click.stop="showRecycleBin = true"
+                    @click.stop="$router.push('/recycle-bin')"
                   />
                 </div>
               </td>
@@ -254,49 +254,6 @@
       </div>
     </van-popup>
 
-    <van-popup v-model="showRecycleBin" position="bottom" round :style="{ maxHeight: '70vh' }">
-      <div class="recycle-bin">
-        <div class="recycle-bin-header">
-          <span class="recycle-bin-title">回收站</span>
-          <span class="recycle-bin-count">{{ filteredDeletedData.length }} / {{ deletedData.length }} 条</span>
-          <van-icon name="cross" class="recycle-bin-close" @click="showRecycleBin = false" />
-        </div>
-        <div v-if="deletedData.length > 0" class="recycle-bin-filter">
-          <input
-            v-model="recycleFilterDate"
-            type="date"
-            class="recycle-filter-input"
-          />
-          <span v-if="recycleFilterDate" class="recycle-filter-clear" @click="recycleFilterDate = ''">清除</span>
-        </div>
-        <div v-if="deletedData.length === 0" class="recycle-bin-empty">
-          <van-icon name="info-o" size="40" color="#dcdfe6" />
-          <p>回收站为空</p>
-        </div>
-        <div v-else-if="filteredDeletedData.length === 0" class="recycle-bin-empty">
-          <p>该日期无数据</p>
-        </div>
-        <div v-else class="recycle-bin-list">
-          <div v-for="item in filteredDeletedData" :key="'del-' + item.id" class="recycle-bin-item">
-            <div class="recycle-bin-item-info">
-              <span class="recycle-bin-item-name">
-                <span v-if="item.stolenStatus" class="stolen-dot" :class="item.stolenStatus"></span>
-                {{ item.name || '未命名' }}
-              </span>
-              <span v-if="item.maturityTime" class="recycle-bin-item-time">{{ item.maturityTime }}</span>
-            </div>
-            <div class="recycle-bin-item-actions">
-              <van-icon name="replay" class="recycle-action restore" @click="restoreItem(item)" />
-              <van-icon name="delete-o" class="recycle-action permanent" @click="permanentDelete(item)" />
-            </div>
-          </div>
-        </div>
-        <div v-if="deletedData.length > 0" class="recycle-bin-footer">
-          <span class="recycle-bin-clear" @click="permanentClearAll">清空回收站</span>
-        </div>
-      </div>
-    </van-popup>
-
     <transition name="fade">
       <div v-if="showBackTop" class="back-top" @click="scrollToTop">
         <van-icon name="arrow-up" />
@@ -343,8 +300,6 @@ export default {
       deletedData: [],
       expandedStolenId: null,
       showBackTop: false,
-      showRecycleBin: false,
-      recycleFilterDate: '',
       showReminder: false,
       reminderRowId: null,
       reminderName: '',
@@ -376,13 +331,6 @@ export default {
         result.push(row);
       }
       return result;
-    },
-    filteredDeletedData() {
-      if (!this.recycleFilterDate) return this.deletedData;
-      return this.deletedData.filter(item => {
-        if (!item.deletedAt) return false;
-        return item.deletedAt.slice(0, 10) === this.recycleFilterDate;
-      });
     },
     nearestEntryId() {
       let minRemaining = Infinity;
@@ -775,40 +723,6 @@ export default {
         this.notifiedIds = [];
         this.markedIds = [];
         this.$toast.success('已移入回收站');
-      }).catch(() => {});
-    },
-
-    restoreItem(item) {
-      const idx = this.deletedData.findIndex(d => d.id === item.id);
-      if (idx !== -1) {
-        this.deletedData.splice(idx, 1);
-        const { stolenStatus, ...row } = item;
-        this.tableData.push(row);
-        if (stolenStatus) {
-          this.$set(this.stolenMap, row.id, stolenStatus);
-        }
-        this.$toast.success('已恢复');
-      }
-    },
-
-    permanentDelete(item) {
-      this.$dialog.confirm({
-        title: '永久删除',
-        message: `确定要永久删除 "${item.name || '未命名'}" 吗？`
-      }).then(() => {
-        const idx = this.deletedData.findIndex(d => d.id === item.id);
-        if (idx !== -1) this.deletedData.splice(idx, 1);
-        this.$toast.success('已永久删除');
-      }).catch(() => {});
-    },
-
-    permanentClearAll() {
-      this.$dialog.confirm({
-        title: '清空回收站',
-        message: `确定要永久删除全部 ${this.deletedData.length} 条数据吗？此操作不可恢复！`
-      }).then(() => {
-        this.deletedData = [];
-        this.$toast.success('回收站已清空');
       }).catch(() => {});
     },
 
@@ -1819,160 +1733,6 @@ td {
   }
 }
 
-.recycle-bin {
-  padding: 0;
-}
-
-.recycle-bin-header {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.recycle-bin-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  flex: 1;
-}
-
-.recycle-bin-count {
-  font-size: 12px;
-  color: #9ca3af;
-  margin-right: 12px;
-}
-
-.recycle-bin-close {
-  font-size: 18px;
-  color: #9ca3af;
-  cursor: pointer;
-}
-
-.recycle-bin-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.recycle-filter-input {
-  flex: 1;
-  padding: 6px 10px;
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #333;
-  outline: none;
-
-  &:focus {
-    border-color: #3b82f6;
-  }
-}
-
-.recycle-filter-clear {
-  font-size: 12px;
-  color: #3b82f6;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    color: #2563eb;
-  }
-}
-
-.recycle-bin-empty {
-  padding: 40px 0;
-  text-align: center;
-  color: #9ca3af;
-
-  p {
-    margin-top: 8px;
-    font-size: 13px;
-  }
-}
-
-.recycle-bin-list {
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.recycle-bin-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.recycle-bin-item-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.recycle-bin-item-name {
-  font-size: 14px;
-  color: #333;
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recycle-bin-item-time {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.recycle-bin-item-actions {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-  margin-left: 12px;
-}
-
-.recycle-action {
-  font-size: 18px;
-  cursor: pointer;
-  transition: transform 0.15s;
-
-  &:active {
-    transform: scale(0.85);
-  }
-
-  &.restore {
-    color: #3b82f6;
-
-    &:hover {
-      color: #2563eb;
-    }
-  }
-
-  &.permanent {
-    color: #ef4444;
-
-    &:hover {
-      color: #dc2626;
-    }
-  }
-}
-
-.recycle-bin-footer {
-  padding: 12px 20px;
-  text-align: center;
-  border-top: 1px solid #f0f0f0;
-}
-
-.recycle-bin-clear {
-  font-size: 13px;
-  color: #ef4444;
-  cursor: pointer;
-
-  &:hover {
-    color: #dc2626;
-  }
-}
-
 .back-top {
   position: fixed;
   bottom: 80px;
@@ -2005,24 +1765,5 @@ td {
 .fade-leave-to {
   opacity: 0;
   transform: scale(0.8);
-}
-</style>
-
-<style>
-.recycle-bin-item .stolen-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 4px;
-  vertical-align: middle;
-}
-.recycle-bin-item .stolen-dot.green {
-  background-color: #22c55e;
-  box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
-}
-.recycle-bin-item .stolen-dot.orange {
-  background-color: #f97316;
-  box-shadow: 0 0 4px rgba(249, 115, 22, 0.5);
 }
 </style>
