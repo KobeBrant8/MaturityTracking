@@ -7,22 +7,21 @@
     </div>
 
     <div v-if="deletedData.length > 0" class="recycle-filter">
-      <van-icon name="calendar-o" class="filter-icon" />
       <span class="filter-label">筛选日期</span>
-      <span class="filter-value" @click.stop="showDatePicker = true">{{ filterDate || '全部' }}</span>
-      <span v-if="filterDate" class="filter-clear" @click="filterDate = ''">清除</span>
+      <span v-if="filterDate" class="filter-clear" @click="filterDate = ''">显示全部</span>
     </div>
 
-    <van-popup v-model="showDatePicker" position="bottom" round>
-      <van-datetime-picker
-        v-model="currentDate"
-        type="date"
+    <div v-if="deletedData.length > 0" class="calendar-wrap">
+      <van-calendar
+        :poppable="false"
         :min-date="minDate"
         :max-date="maxDate"
-        @confirm="onDateConfirm"
-        @cancel="showDatePicker = false"
+        :default-date="defaultDate"
+        :show-confirm="false"
+        color="#3b82f6"
+        @select="onCalendarSelect"
       />
-    </van-popup>
+    </div>
 
     <div v-if="deletedData.length === 0" class="recycle-empty">
       <van-icon name="info-o" size="48" color="#dcdfe6" />
@@ -66,16 +65,12 @@ export default {
   name: 'RecycleBin',
   data() {
     const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
     return {
       deletedData: [],
-      filterDate: `${y}-${m}-${d}`,
-      showDatePicker: false,
-      currentDate: today,
+      filterDate: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+      defaultDate: today,
       minDate: new Date(2020, 0, 1),
-      maxDate: new Date()
+      maxDate: today
     };
   },
   computed: {
@@ -166,13 +161,11 @@ export default {
         this.$toast.success('回收站已清空');
       }).catch(() => {});
     },
-    onDateConfirm(val) {
-      const y = val.getFullYear();
-      const m = String(val.getMonth() + 1).padStart(2, '0');
-      const d = String(val.getDate()).padStart(2, '0');
+    onCalendarSelect(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
       this.filterDate = `${y}-${m}-${d}`;
-      this.currentDate = val;
-      this.showDatePicker = false;
     }
   }
 };
@@ -217,45 +210,30 @@ export default {
 .recycle-filter {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   padding: 10px 16px;
   background-color: #fff;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.filter-icon {
-  font-size: 16px;
-  color: #3b82f6;
-}
-
 .filter-label {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.filter-value {
-  flex: 1;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   color: #333;
-  padding: 4px 8px;
-  background-color: #f3f4f6;
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:active {
-    background-color: #e5e7eb;
-  }
 }
 
 .filter-clear {
   font-size: 13px;
   color: #3b82f6;
   cursor: pointer;
-  white-space: nowrap;
 
   &:hover {
     color: #2563eb;
   }
+}
+
+.calendar-wrap {
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .recycle-empty {
