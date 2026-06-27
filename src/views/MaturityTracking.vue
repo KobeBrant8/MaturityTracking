@@ -69,7 +69,7 @@
               </td>
             </template>
             <template v-else>
-            <td class="td-index" style="position:relative;">
+            <td class="td-index">
               <span
                 class="stolen-dot"
                 :class="stolenMap[row.id] || 'gray'"
@@ -80,7 +80,6 @@
                 class="stolen-popover"
                 @click.stop
               >
-                <span class="stolen-popover-arrow"></span>
                 <span
                   class="stolen-dot green"
                   :class="{ active: stolenMap[row.id] === 'green' }"
@@ -92,7 +91,7 @@
                   @click="selectStolen(row.id, 'orange')"
                 ></span>
               </div>
-              {{ getDisplayIndex(row) }}
+              <span class="td-index-num">{{ getDisplayIndex(row) }}</span>
             </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
               <van-field
@@ -1116,11 +1115,29 @@ td {
 }
 
 .td-index {
+  position: relative;
   text-align: center;
   color: #909399;
   font-size: 12px;
   width: 40px;
   cursor: pointer;
+
+  > .stolen-dot {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+  }
+
+  > .stolen-popover {
+    position: absolute;
+    top: -4px;
+    left: 14px;
+  }
+}
+
+.td-index-num {
+  display: inline-block;
+  width: 100%;
 }
 
 .stolen-dot {
@@ -1130,7 +1147,6 @@ td {
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.15s;
-  vertical-align: middle;
 
   &:hover {
     transform: scale(1.25);
