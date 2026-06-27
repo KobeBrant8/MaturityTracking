@@ -305,6 +305,9 @@ export default {
         if (!a.maturityTime && !b.maturityTime) return 0;
         if (!a.maturityTime) return 1;
         if (!b.maturityTime) return -1;
+        if (aExpired && bExpired) {
+          return b.maturityTime.localeCompare(a.maturityTime);
+        }
         return a.maturityTime.localeCompare(b.maturityTime);
       });
       const result = [];
