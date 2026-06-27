@@ -1542,17 +1542,17 @@ td {
 }
 
 .highlight-row {
-  animation: highlight-flash 2.5s ease;
-  border-left: 3px solid #3b82f6 !important;
+  animation: highlight-glow 2.5s ease forwards;
+  box-shadow: inset 0 0 0 2px #3b82f6 !important;
 }
 
-@keyframes highlight-flash {
-  0%   { background-color: #bfdbfe; }
-  15%  { background-color: #fff; }
-  30%  { background-color: #bfdbfe; }
-  45%  { background-color: #fff; }
-  60%  { background-color: #bfdbfe; }
-  100% { background-color: transparent; border-left-color: transparent; }
+@keyframes highlight-glow {
+  0%   { box-shadow: inset 0 0 0 2px #3b82f6, 0 0 8px rgba(59, 130, 246, 0.5); background-color: rgba(59, 130, 246, 0.1); }
+  20%  { box-shadow: inset 0 0 0 2px #60a5fa, 0 0 14px rgba(59, 130, 246, 0.7); background-color: rgba(59, 130, 246, 0.15); }
+  40%  { box-shadow: inset 0 0 0 2px #3b82f6, 0 0 8px rgba(59, 130, 246, 0.5); background-color: rgba(59, 130, 246, 0.1); }
+  60%  { box-shadow: inset 0 0 0 2px #60a5fa, 0 0 14px rgba(59, 130, 246, 0.7); background-color: rgba(59, 130, 246, 0.08); }
+  80%  { box-shadow: inset 0 0 0 2px #93c5fd, 0 0 6px rgba(59, 130, 246, 0.3); background-color: rgba(59, 130, 246, 0.03); }
+  100% { box-shadow: none; background-color: transparent; }
 }
 
 .reminder-dialog {
