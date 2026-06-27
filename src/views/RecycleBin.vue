@@ -69,7 +69,7 @@ export default {
       filterDate: '',
       showCalendar: false,
       defaultDate: new Date(),
-      minDate: new Date(2020, 0, 1),
+      minDate: new Date(2026, 5, 1),
       maxDate: new Date()
     };
   },
