@@ -1124,7 +1124,7 @@ td {
 
   > .stolen-dot {
     position: absolute;
-    top: 2px;
+    top: 6px;
     left: 2px;
   }
 
