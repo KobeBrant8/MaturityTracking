@@ -47,28 +47,23 @@
           </tr>
         </thead>
         <tbody>
-          <template v-for="(row, index) in sortedTableData" :key="row.id">
           <tr
-            v-if="isFirstExpiredRow(index)"
-            class="expired-divider-row"
+            v-for="row in sortedTableData"
+            :key="row.id"
+            :data-id="row._divider ? undefined : row.id"
+            @dblclick="row._divider ? null : copyName(row.name)"
+            :class="row._divider ? 'expired-divider-row' : ''"
           >
-            <td colspan="4">
-              <div class="expired-divider">
-                <span class="expired-divider-line"></span>
-                <span class="expired-divider-text">已过期</span>
-                <span class="expired-divider-line"></span>
-              </div>
-            </td>
-          </tr>
-          <tr
-            :data-id="row.id"
-            @dblclick="copyName(row.name)"
-            :class="{
-              'nearest-row': nearestEntryId === row.id && row.maturityTime,
-              'expired-row': isRowExpired(row),
-              'marked-row': markedIds.includes(row.id)
-            }"
-          >
+            <template v-if="row._divider">
+              <td colspan="4">
+                <div class="expired-divider">
+                  <span class="expired-divider-line"></span>
+                  <span class="expired-divider-text">已过期</span>
+                  <span class="expired-divider-line"></span>
+                </div>
+              </td>
+            </template>
+            <template v-else>
             <td class="td-index" style="position:relative;">
               <span
                 class="stolen-dot"
@@ -119,8 +114,8 @@
               />
               <van-icon name="delete-o" class="action-icon delete-icon" @click="deleteRowById(row.id)" />
             </td>
+            </template>
           </tr>
-          </template>
         </tbody>
       </table>
     </div>
@@ -299,7 +294,7 @@ export default {
   },
   computed: {
     sortedTableData() {
-      return [...this.tableData].sort((a, b) => {
+      const sorted = [...this.tableData].sort((a, b) => {
         const aExpired = this.isRowExpired(a);
         const bExpired = this.isRowExpired(b);
         if (aExpired !== bExpired) return aExpired ? 1 : -1;
@@ -308,6 +303,16 @@ export default {
         if (!b.maturityTime) return -1;
         return a.maturityTime.localeCompare(b.maturityTime);
       });
+      const result = [];
+      let hasDivider = false;
+      for (const row of sorted) {
+        if (this.isRowExpired(row) && !hasDivider) {
+          result.push({ _divider: true, id: 'divider' });
+          hasDivider = true;
+        }
+        result.push(row);
+      }
+      return result;
     },
     nearestEntryId() {
       let minRemaining = Infinity;
@@ -774,13 +779,6 @@ export default {
       return this.getRemainingSeconds(row) <= 0;
     },
 
-    isFirstExpiredRow(index) {
-      const row = this.sortedTableData[index];
-      if (!this.isRowExpired(row)) return false;
-      if (index === 0) return true;
-      return !this.isRowExpired(this.sortedTableData[index - 1]);
-    },
-
     triggerReminder(row) {
       this.reminderRowId = row.id;
       this.reminderName = row.name || '未命名用户';
@@ -1173,34 +1171,6 @@ td {
     opacity: 1;
     transform: translateY(-50%) scale(1);
   }
-}
-
-.expired-divider-row {
-  background-color: transparent !important;
-
-  td {
-    padding: 8px 0;
-    border: none;
-  }
-}
-
-.expired-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.expired-divider-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #d1d5db, transparent);
-}
-
-.expired-divider-text {
-  font-size: 11px;
-  color: #9ca3af;
-  white-space: nowrap;
-  letter-spacing: 1px;
 }
 
 .mark-icon {
