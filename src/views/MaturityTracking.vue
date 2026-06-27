@@ -47,8 +47,21 @@
           </tr>
         </thead>
         <tbody>
+          <template v-for="(row, index) in sortedTableData">
           <tr
-            v-for="(row, index) in sortedTableData"
+            v-if="isFirstExpiredRow(index)"
+            :key="'divider-' + row.id"
+            class="expired-divider-row"
+          >
+            <td colspan="4">
+              <div class="expired-divider">
+                <span class="expired-divider-line"></span>
+                <span class="expired-divider-text">已过期</span>
+                <span class="expired-divider-line"></span>
+              </div>
+            </td>
+          </tr>
+          <tr
             :key="row.id"
             :data-id="row.id"
             @dblclick="copyName(row.name)"
@@ -109,6 +122,7 @@
               <van-icon name="delete-o" class="action-icon delete-icon" @click="deleteRowById(row.id)" />
             </td>
           </tr>
+          </template>
         </tbody>
       </table>
     </div>
@@ -762,6 +776,13 @@ export default {
       return this.getRemainingSeconds(row) <= 0;
     },
 
+    isFirstExpiredRow(index) {
+      const row = this.sortedTableData[index];
+      if (!this.isRowExpired(row)) return false;
+      if (index === 0) return true;
+      return !this.isRowExpired(this.sortedTableData[index - 1]);
+    },
+
     triggerReminder(row) {
       this.reminderRowId = row.id;
       this.reminderName = row.name || '未命名用户';
@@ -1154,6 +1175,34 @@ td {
     opacity: 1;
     transform: translateY(-50%) scale(1);
   }
+}
+
+.expired-divider-row {
+  background-color: transparent !important;
+
+  td {
+    padding: 8px 0;
+    border: none;
+  }
+}
+
+.expired-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.expired-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d1d5db, transparent);
+}
+
+.expired-divider-text {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+  letter-spacing: 1px;
 }
 
 .mark-icon {
