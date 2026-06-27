@@ -58,11 +58,19 @@
               'marked-row': markedIds.includes(row.id)
             }"
           >
-            <td class="td-index" @click.stop="toggleStolen(row.id)">
-              <span
-                class="stolen-dot"
-                :class="stolenMap[row.id]"
-              ></span>
+            <td class="td-index">
+              <span class="stolen-area" @click.stop>
+                <span
+                  v-if="expandedStolenId !== row.id"
+                  class="stolen-dot"
+                  :class="stolenMap[row.id] || 'gray'"
+                  @click="expandedStolenId = row.id"
+                ></span>
+                <span v-else class="stolen-picker">
+                  <span class="stolen-dot green" @click="selectStolen(row.id, 'green')"></span>
+                  <span class="stolen-dot orange" @click="selectStolen(row.id, 'orange')"></span>
+                </span>
+              </span>
               {{ index + 1 }}
             </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
@@ -251,6 +259,7 @@ export default {
       notifiedIds: [],
       markedIds: [],
       stolenMap: {},
+      expandedStolenId: null,
       showReminder: false,
       reminderName: '',
       reminderTime: '',
@@ -296,8 +305,10 @@ export default {
   },
   mounted() {
     this.startMaturityCheck();
+    document.addEventListener('click', this.closeStolenPicker);
   },
   beforeDestroy() {
+    document.removeEventListener('click', this.closeStolenPicker);
     this.stopMaturityCheck();
   },
   watch: {
@@ -584,15 +595,13 @@ export default {
       }
     },
 
-    toggleStolen(id) {
-      const current = this.stolenMap[id] || '';
-      if (current === '') {
-        this.$set(this.stolenMap, id, 'green');
-      } else if (current === 'green') {
-        this.$set(this.stolenMap, id, 'orange');
-      } else {
-        this.$set(this.stolenMap, id, '');
-      }
+    selectStolen(id, color) {
+      this.$set(this.stolenMap, id, color);
+      this.expandedStolenId = null;
+    },
+
+    closeStolenPicker() {
+      this.expandedStolenId = null;
     },
 
     clearExpired() {
@@ -1030,13 +1039,27 @@ td {
   cursor: pointer;
 }
 
+.stolen-area {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2px;
+}
+
 .stolen-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin-right: 2px;
-  vertical-align: middle;
+  cursor: pointer;
+  transition: transform 0.15s;
+
+  &:hover {
+    transform: scale(1.3);
+  }
+
+  &.gray {
+    background-color: #d1d5db;
+  }
 
   &.green {
     background-color: #22c55e;
@@ -1047,6 +1070,12 @@ td {
     background-color: #f97316;
     box-shadow: 0 0 4px rgba(249, 115, 22, 0.5);
   }
+}
+
+.stolen-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .mark-icon {
