@@ -729,6 +729,7 @@ export default {
     },
 
     isRowExpired(row) {
+      if (this.stolenMap[row.id]) return true;
       if (!row.maturityTime || !this.notifiedIds.includes(row.id)) return false;
       return this.getRemainingSeconds(row) <= 0;
     },
