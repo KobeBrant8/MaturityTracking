@@ -220,16 +220,15 @@
 
     <van-popup v-model="showReminder" position="center" round>
       <div class="reminder-dialog">
+        <span class="reminder-stolen-dot" @click.stop>
+          <span class="stolen-dot green" @click="selectStolenFromReminder('green')"></span>
+          <span class="stolen-dot orange" @click="selectStolenFromReminder('orange')"></span>
+        </span>
         <div class="reminder-title">成熟时间提醒</div>
         <div class="reminder-body">
           <div class="reminder-message">{{ reminderName }} 的成熟时间已到！</div>
           <div class="reminder-time">成熟时间：{{ reminderTime }}</div>
           <div class="reminder-copy" @click="copyReminderName">复制名称</div>
-          <div class="reminder-stolen">
-            <span class="reminder-stolen-label">是否偷到？</span>
-            <span class="stolen-dot green" @click="selectStolenFromReminder('green')"></span>
-            <span class="stolen-dot orange" @click="selectStolenFromReminder('orange')"></span>
-          </div>
         </div>
       </div>
     </van-popup>
@@ -1570,7 +1569,8 @@ td {
   width: 280px;
   background-color: #fff;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .reminder-title {
@@ -1621,19 +1621,13 @@ td {
   }
 }
 
-.reminder-stolen {
+.reminder-stolen-dot {
+  position: absolute;
+  top: 14px;
+  left: 14px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #ebedf0;
-}
-
-.reminder-stolen-label {
-  font-size: 14px;
-  color: #6b7280;
+  gap: 6px;
+  z-index: 1;
 }
 
 .back-top {
