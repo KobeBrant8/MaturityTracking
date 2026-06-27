@@ -52,7 +52,12 @@
             :key="row.id"
             :data-id="row._divider ? undefined : row.id"
             @dblclick="row._divider ? null : copyName(row.name)"
-            :class="row._divider ? 'expired-divider-row' : ''"
+            :class="{
+              'expired-divider-row': row._divider,
+              'nearest-row': !row._divider && nearestEntryId === row.id && row.maturityTime,
+              'expired-row': !row._divider && isRowExpired(row),
+              'marked-row': !row._divider && markedIds.includes(row.id)
+            }"
           >
             <template v-if="row._divider">
               <td colspan="4">
@@ -87,7 +92,7 @@
                   @click="selectStolen(row.id, 'orange')"
                 ></span>
               </div>
-              {{ index + 1 }}
+              {{ getDisplayIndex(row) }}
             </td>
             <td :class="['td-name', { 'name-empty': !row.name }]">
               <van-field
@@ -777,6 +782,17 @@ export default {
       if (this.stolenMap[row.id]) return true;
       if (!row.maturityTime || !this.notifiedIds.includes(row.id)) return false;
       return this.getRemainingSeconds(row) <= 0;
+    },
+
+    getDisplayIndex(row) {
+      if (row._divider) return '';
+      let idx = 0;
+      for (const item of this.sortedTableData) {
+        if (item._divider) continue;
+        idx++;
+        if (item.id === row.id) return idx;
+      }
+      return '';
     },
 
     triggerReminder(row) {
