@@ -719,6 +719,7 @@ export default {
       for (const row of this.tableData) {
         if (!row.maturityTime) continue;
         if (this.notifiedIds.includes(row.id)) continue;
+        if (this.stolenMap[row.id]) continue;
 
         const remaining = this.getRemainingSeconds(row);
         if (remaining <= 0) {
