@@ -2007,3 +2007,22 @@ td {
   transform: scale(0.8);
 }
 </style>
+
+<style>
+.recycle-bin-item .stolen-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.recycle-bin-item .stolen-dot.green {
+  background-color: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+}
+.recycle-bin-item .stolen-dot.orange {
+  background-color: #f97316;
+  box-shadow: 0 0 4px rgba(249, 115, 22, 0.5);
+}
+</style>
