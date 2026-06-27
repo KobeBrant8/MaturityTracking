@@ -463,7 +463,15 @@ export default {
       this.editingId = row.id;
       this.isAddingNew = false;
       this.editName = row.name || '';
-      if (row.upcomingTime) {
+      const remaining = this.getRemainingSeconds(row);
+      if (remaining > 0 && remaining !== Infinity) {
+        const h = Math.floor(remaining / 3600);
+        const m = Math.floor((remaining % 3600) / 60);
+        const s = remaining % 60;
+        this.editHour = String(h).padStart(2, '0');
+        this.editMinute = String(m).padStart(2, '0');
+        this.editSecond = String(s).padStart(2, '0');
+      } else if (row.upcomingTime) {
         const parts = row.upcomingTime.split(':');
         this.editHour = parts[0] || '';
         this.editMinute = parts[1] || '';
