@@ -253,15 +253,26 @@
       <div class="recycle-bin">
         <div class="recycle-bin-header">
           <span class="recycle-bin-title">回收站</span>
-          <span class="recycle-bin-count">{{ deletedData.length }} 条数据</span>
+          <span class="recycle-bin-count">{{ filteredDeletedData.length }} / {{ deletedData.length }} 条</span>
           <van-icon name="cross" class="recycle-bin-close" @click="showRecycleBin = false" />
+        </div>
+        <div v-if="deletedData.length > 0" class="recycle-bin-filter">
+          <input
+            v-model="recycleFilterDate"
+            type="date"
+            class="recycle-filter-input"
+          />
+          <span v-if="recycleFilterDate" class="recycle-filter-clear" @click="recycleFilterDate = ''">清除</span>
         </div>
         <div v-if="deletedData.length === 0" class="recycle-bin-empty">
           <van-icon name="info-o" size="40" color="#dcdfe6" />
           <p>回收站为空</p>
         </div>
+        <div v-else-if="filteredDeletedData.length === 0" class="recycle-bin-empty">
+          <p>该日期无数据</p>
+        </div>
         <div v-else class="recycle-bin-list">
-          <div v-for="item in deletedData" :key="'del-' + item.id" class="recycle-bin-item">
+          <div v-for="item in filteredDeletedData" :key="'del-' + item.id" class="recycle-bin-item">
             <div class="recycle-bin-item-info">
               <span class="recycle-bin-item-name">{{ item.name || '未命名' }}</span>
               <span v-if="item.maturityTime" class="recycle-bin-item-time">{{ item.maturityTime }}</span>
@@ -325,6 +336,7 @@ export default {
       expandedStolenId: null,
       showBackTop: false,
       showRecycleBin: false,
+      recycleFilterDate: '',
       showReminder: false,
       reminderRowId: null,
       reminderName: '',
@@ -356,6 +368,13 @@ export default {
         result.push(row);
       }
       return result;
+    },
+    filteredDeletedData() {
+      if (!this.recycleFilterDate) return this.deletedData;
+      return this.deletedData.filter(item => {
+        if (!item.deletedAt) return false;
+        return item.deletedAt.slice(0, 10) === this.recycleFilterDate;
+      });
     },
     nearestEntryId() {
       let minRemaining = Infinity;
@@ -485,7 +504,7 @@ export default {
         message: '确定要删除这条数据吗？数据将移入回收站。'
       }).then(() => {
         const row = this.tableData[index];
-        this.deletedData.push({ ...row });
+        this.deletedData.push({ ...row, deletedAt: new Date().toISOString() });
         this.tableData.splice(index, 1);
         this.$toast.success('已移入回收站');
       }).catch(() => {});
@@ -1790,6 +1809,39 @@ td {
   font-size: 18px;
   color: #9ca3af;
   cursor: pointer;
+}
+
+.recycle-bin-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.recycle-filter-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #333;
+  outline: none;
+
+  &:focus {
+    border-color: #3b82f6;
+  }
+}
+
+.recycle-filter-clear {
+  font-size: 12px;
+  color: #3b82f6;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: #2563eb;
+  }
 }
 
 .recycle-bin-empty {
