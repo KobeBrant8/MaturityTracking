@@ -225,9 +225,11 @@
           <div class="reminder-message">{{ reminderName }} 的成熟时间已到！</div>
           <div class="reminder-time">成熟时间：{{ reminderTime }}</div>
           <div class="reminder-copy" @click="copyReminderName">复制名称</div>
-        </div>
-        <div class="reminder-footer">
-          <span class="reminder-btn" @click="showReminder = false">我知道了</span>
+          <div class="reminder-stolen">
+            <span class="reminder-stolen-label">是否偷到？</span>
+            <span class="stolen-dot green" @click="selectStolenFromReminder('green')"></span>
+            <span class="stolen-dot orange" @click="selectStolenFromReminder('orange')"></span>
+          </div>
         </div>
       </div>
     </van-popup>
@@ -278,6 +280,7 @@ export default {
       expandedStolenId: null,
       showBackTop: false,
       showReminder: false,
+      reminderRowId: null,
       reminderName: '',
       reminderTime: '',
       memoName: ''
@@ -761,6 +764,7 @@ export default {
     },
 
     triggerReminder(row) {
+      this.reminderRowId = row.id;
       this.reminderName = row.name || '未命名用户';
       this.reminderTime = row.maturityTime;
       this.reminderRawName = row.name || '';
@@ -788,6 +792,13 @@ export default {
         return;
       }
       this.copyName(this.reminderRawName);
+    },
+
+    selectStolenFromReminder(color) {
+      if (this.reminderRowId) {
+        this.$set(this.stolenMap, this.reminderRowId, color);
+      }
+      this.showReminder = false;
     }
   }
 };
@@ -1610,31 +1621,19 @@ td {
   }
 }
 
-.reminder-footer {
-  padding: 20px 0;
-  text-align: center;
-  border-top: 1px solid #ebedf0;
+.reminder-stolen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ebedf0;
 }
 
-.reminder-btn {
-  display: inline-block;
-  padding: 8px 40px;
-  font-size: 16px;
-  font-weight: 500;
-  color: #fff;
-  background-color: #1989fa;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #0570db;
-  }
-
-  &:active {
-    background-color: #034ea2;
-  }
+.reminder-stolen-label {
+  font-size: 14px;
+  color: #6b7280;
 }
 
 .back-top {
