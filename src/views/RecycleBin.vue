@@ -79,7 +79,13 @@ export default {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          this.deletedData = parsed.deletedData || [];
+          const stolenMap = parsed.stolenMap || {};
+          this.deletedData = (parsed.deletedData || []).map(item => {
+            if (!item.stolenStatus && stolenMap[item.id]) {
+              return { ...item, stolenStatus: stolenMap[item.id] };
+            }
+            return item;
+          });
         }
       } catch (e) {
         console.error('加载数据失败:', e);
