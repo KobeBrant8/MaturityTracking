@@ -26,22 +26,24 @@
         <div class="action-btn more-entry" @click.stop="showMoreActions = !showMoreActions">
           <van-icon name="ellipsis" class="action-icon more-icon" />
           <span class="action-text">更多</span>
-          <div v-if="showMoreActions" class="more-popover" @click.stop>
-            <div class="more-popover-item" @click="handleClearExpired">
-              <van-icon name="delete-o" class="more-popover-icon" />
-              <span>清除过期</span>
-            </div>
-            <div class="more-popover-item" @click="handleClearAll">
-              <van-icon name="delete" class="more-popover-icon" />
-              <span>清除全部</span>
-            </div>
-            <div class="more-popover-item" @click="handleRecycleBin">
-              <van-icon name="delete" class="more-popover-icon recycle" />
-              <span>回收站</span>
-              <span v-if="deletedData.length > 0" class="more-badge">{{ deletedData.length }}</span>
-            </div>
-          </div>
         </div>
+      </div>
+    </div>
+
+    <div v-if="showMoreActions" class="more-backdrop" @click="showMoreActions = false"></div>
+    <div v-if="showMoreActions" class="more-popover" @click.native.stop>
+      <div class="more-popover-item" @click="handleClearExpired">
+        <van-icon name="delete-o" class="more-popover-icon" />
+        <span>清除过期</span>
+      </div>
+      <div class="more-popover-item" @click="handleClearAll">
+        <van-icon name="delete" class="more-popover-icon" />
+        <span>清除全部</span>
+      </div>
+      <div class="more-popover-item" @click="handleRecycleBin">
+        <van-icon name="delete" class="more-popover-icon recycle" />
+        <span>回收站</span>
+        <span v-if="deletedData.length > 0" class="more-badge">{{ deletedData.length }}</span>
       </div>
     </div>
 
@@ -362,12 +364,10 @@ export default {
   mounted() {
     this.startMaturityCheck();
     document.addEventListener('click', this.closeStolenPicker);
-    document.addEventListener('click', this.closeMoreActions);
     window.addEventListener('scroll', this.handleScroll);
   },
   beforeDestroy() {
     document.removeEventListener('click', this.closeStolenPicker);
-    document.removeEventListener('click', this.closeMoreActions);
     window.removeEventListener('scroll', this.handleScroll);
     this.stopMaturityCheck();
   },
@@ -687,12 +687,6 @@ export default {
       this.expandedStolenId = null;
     },
 
-    closeMoreActions(e) {
-      const moreEntry = this.$el.querySelector('.more-entry');
-      if (moreEntry && moreEntry.contains(e.target)) return;
-      this.showMoreActions = false;
-    },
-
     handleClearExpired() {
       this.showMoreActions = false;
       this.clearExpired();
@@ -983,11 +977,19 @@ export default {
   }
 }
 
-.more-popover {
-  position: absolute;
-  top: 100%;
+.more-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
   right: 0;
-  margin-top: 6px;
+  bottom: 0;
+  z-index: 99;
+}
+
+.more-popover {
+  position: fixed;
+  top: 60px;
+  right: 16px;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -995,7 +997,7 @@ export default {
   background: #fff;
   border-radius: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  z-index: 50;
+  z-index: 100;
   white-space: nowrap;
   animation: popover-in 0.15s ease;
 }
