@@ -3,25 +3,27 @@
     <div class="header">
       <h2 class="page-title"></h2>
       <div class="header-actions">
-        <div class="memo-name-wrapper">
-          <input
-            v-model="memoName"
-            type="text"
-            class="memo-name-input"
-            placeholder="备忘"
-          />
-          <span class="memo-copy-icon" @click="copyName(memoName)">
-            <i class="copy-icon-back"></i>
-            <i class="copy-icon-front"></i>
-          </span>
-        </div>
-        <div class="action-btn" @click="showSearch = true">
-          <van-icon name="search" class="action-icon search-icon" />
-          <span class="action-text">搜索</span>
-        </div>
-        <div class="action-btn" @click="addRow">
-          <van-icon name="add-o" class="action-icon add-icon" />
-          <span class="action-text">新增</span>
+        <div class="header-left">
+          <div class="memo-name-wrapper">
+            <input
+              v-model="memoName"
+              type="text"
+              class="memo-name-input"
+              placeholder="备忘"
+            />
+            <span class="memo-copy-icon" @click="copyName(memoName)">
+              <i class="copy-icon-back"></i>
+              <i class="copy-icon-front"></i>
+            </span>
+          </div>
+          <div class="action-btn" @click="showSearch = true">
+            <van-icon name="search" class="action-icon search-icon" />
+            <span class="action-text">搜索</span>
+          </div>
+          <div class="action-btn" @click="addRow">
+            <van-icon name="add-o" class="action-icon add-icon" />
+            <span class="action-text">新增</span>
+          </div>
         </div>
         <div class="action-btn more-entry" @click.stop="showMoreActions = !showMoreActions">
           <van-icon name="ellipsis" class="action-icon more-icon" />
@@ -907,7 +909,13 @@ export default {
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
-    margin-left: auto;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
   }
 
   .action-btn {
