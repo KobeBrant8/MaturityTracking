@@ -430,8 +430,7 @@ export default {
     popupSuggestions() {
       const val = this.editName ? this.editName.trim().toLowerCase() : '';
       if (!val) {
-        // If empty, recommend top 5 most frequent names
-        return this.getFrequentNames().slice(0, 5);
+        return [];
       }
       return this.uniqueNames.filter(name => 
         name.toLowerCase().includes(val) && name.toLowerCase() !== val
@@ -587,22 +586,6 @@ export default {
       document.body.removeChild(textarea);
     },
 
-    getFrequentNames() {
-      const counts = {};
-      this.tableData.forEach(row => {
-        if (row.name && row.name.trim()) {
-          const name = row.name.trim();
-          counts[name] = (counts[name] || 0) + 1;
-        }
-      });
-      this.deletedData.forEach(row => {
-        if (row.name && row.name.trim()) {
-          const name = row.name.trim();
-          counts[name] = (counts[name] || 0) + 1;
-        }
-      });
-      return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-    },
 
     onPopupNameBlur() {
       setTimeout(() => {
