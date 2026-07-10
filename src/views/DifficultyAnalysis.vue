@@ -600,28 +600,53 @@
         </div>
       </section>
     </div>
-    <!-- Name Editing Dialog -->
-    <van-dialog
+    <!-- Beautiful Redesigned Edit Name Popup -->
+    <van-popup
       v-model="showEditDialog"
-      title="修改名称"
-      show-cancel-button
-      :before-close="beforeEditDialogClose"
+      round
+      position="center"
+      class="edit-name-popup"
+      :close-on-click-overlay="false"
     >
-      <div style="padding: 16px;">
-        <van-field
-          v-model="editTargetNewName"
-          label="新名称"
-          placeholder="请输入新的用户名称"
-          ref="editField"
-          :border="true"
-        />
+      <div class="edit-popup-container">
+        <div class="edit-popup-header">
+          <van-icon name="edit" class="header-icon" />
+          <span class="header-title">修改名称</span>
+          <p class="header-subtitle">修改后将同步更新所有历史记录及统计图表</p>
+        </div>
+        
+        <div class="edit-popup-body">
+          <div class="input-wrapper">
+            <span class="input-label">当前名称</span>
+            <div class="old-name-display">{{ editTargetOldName }}</div>
+          </div>
+          
+          <div class="input-wrapper">
+            <span class="input-label">新名称</span>
+            <div class="custom-field-container">
+              <van-icon name="contact" class="field-icon" />
+              <input
+                v-model="editTargetNewName"
+                type="text"
+                class="custom-field-input"
+                placeholder="请输入新名称"
+                ref="editField"
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div class="edit-popup-footer">
+          <button class="footer-btn btn-cancel" @click="cancelEditName">取消</button>
+          <button class="footer-btn btn-confirm" @click="confirmEditName">确认修改</button>
+        </div>
       </div>
-    </van-dialog>
+    </van-popup>
   </div>
 </template>
 
 <script>
-import { Icon, Empty, Toast, Dialog, Field } from 'vant';
+import { Icon, Empty, Toast, Dialog, Field, Popup } from 'vant';
 
 const STORAGE_KEY = 'maturity_tracking_data';
 
@@ -632,7 +657,8 @@ export default {
     [Empty.name]: Empty,
     [Toast.name]: Toast,
     [Dialog.Component.name]: Dialog.Component,
-    [Field.name]: Field
+    [Field.name]: Field,
+    [Popup.name]: Popup
   },
   data() {
     return {
@@ -1223,22 +1249,24 @@ export default {
       this.editTargetOldName = oldName;
       this.editTargetNewName = oldName;
       this.showEditDialog = true;
+      this.$nextTick(() => {
+        if (this.$refs.editField) {
+          this.$refs.editField.focus();
+        }
+      });
     },
-    beforeEditDialogClose(action, done) {
-      if (action === 'cancel') {
-        done();
-        return;
-      }
-      
+    cancelEditName() {
+      this.showEditDialog = false;
+    },
+    confirmEditName() {
       const newName = this.editTargetNewName ? this.editTargetNewName.trim() : '';
       if (!newName) {
         this.$toast.fail('名称不能为空');
-        done(false);
         return;
       }
 
       if (newName === this.editTargetOldName.trim()) {
-        done();
+        this.showEditDialog = false;
         return;
       }
 
@@ -1280,11 +1308,10 @@ export default {
         // 5. Recalculate analysis data
         this.runAnalysis();
         this.$toast.success(`修改成功，共更新 ${updatedCount} 条记录`);
-        done();
+        this.showEditDialog = false;
       } catch (e) {
         console.error('保存修改名称失败:', e);
         this.$toast.fail('保存失败，请重试');
-        done(false);
       }
     },
     prevMonth() {
@@ -2651,6 +2678,168 @@ export default {
     flex-shrink: 0;
     width: 80px;
     text-align: right;
+  }
+}
+
+/* Redesigned Edit Name Popup styling */
+.edit-name-popup {
+  width: 85%;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  
+  .edit-popup-container {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  
+  .edit-popup-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    
+    .header-icon {
+      font-size: 24px;
+      color: #7c3aed;
+      background-color: #f3e8ff;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    
+    .header-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    
+    .header-subtitle {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.4;
+      margin: 0;
+    }
+  }
+  
+  .edit-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    
+    .input-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .old-name-display {
+      background-color: #f1f5f9;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748b;
+      text-align: left;
+    }
+  }
+  
+  .custom-field-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #ffffff;
+    border: 2.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 42px;
+    transition: all 0.2s ease;
+    
+    .field-icon {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+    
+    .custom-field-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      height: 100%;
+      background: transparent;
+      padding: 0;
+      
+      &::placeholder {
+        color: #cbd5e1;
+        font-weight: 400;
+      }
+    }
+    
+    &:focus-within {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3.5px rgba(124, 58, 237, 0.15);
+      
+      .field-icon {
+        color: #7c3aed;
+      }
+    }
+  }
+  
+  .edit-popup-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  
+  .footer-btn {
+    flex: 1;
+    height: 40px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &.btn-cancel {
+      color: #64748b;
+      background-color: #f1f5f9;
+      
+      &:active {
+        background-color: #e2e8f0;
+      }
+    }
+    
+    &.btn-confirm {
+      color: #ffffff;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+      
+      &:active {
+        transform: scale(0.98);
+        box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
+      }
+    }
   }
 }
 </style>
