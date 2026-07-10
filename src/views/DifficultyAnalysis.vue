@@ -34,7 +34,7 @@
             </svg>
           </div>
           <div class="card-footer-info">
-            已成功 <span>{{ totalSuccessCount }}</span> 次 / 失败 <span>{{ totalFailCount }}</span> 次
+            已成功 <span>{{ displaySuccessCount }}</span> 次 / 失败 <span>{{ displayFailCount }}</span> 次
           </div>
         </div>
 
@@ -385,13 +385,20 @@ export default {
     };
   },
   computed: {
+    displaySuccessCount() {
+      const validUsers = this.analyzedUsers.filter(u => u.difficulty !== 'unknown');
+      return validUsers.reduce((sum, u) => sum + u.success, 0);
+    },
+    displayFailCount() {
+      const validUsers = this.analyzedUsers.filter(u => u.difficulty !== 'unknown');
+      return validUsers.reduce((sum, u) => sum + u.fail, 0);
+    },
     overallSuccessRate() {
-      const totalAttempts = this.totalSuccessCount + this.totalFailCount;
-      return totalAttempts > 0 ? (this.totalSuccessCount / totalAttempts) * 100 : 0;
+      const total = this.displaySuccessCount + this.displayFailCount;
+      return total > 0 ? (this.displaySuccessCount / total) * 100 : 0;
     },
     easiestUser() {
-      // High success rate with at least 1 scored attempt
-      const candidates = this.analyzedUsers.filter(u => u.scoredAttempts > 0);
+      const candidates = this.analyzedUsers.filter(u => u.difficulty === 'easy');
       if (candidates.length === 0) return null;
       return candidates.reduce((prev, current) => {
         if (current.successRate > prev.successRate) return current;
@@ -400,8 +407,7 @@ export default {
       }, candidates[0]);
     },
     hardestUser() {
-      // Low success rate with at least 1 scored attempt
-      const candidates = this.analyzedUsers.filter(u => u.scoredAttempts > 0);
+      const candidates = this.analyzedUsers.filter(u => u.difficulty === 'hard');
       if (candidates.length === 0) return null;
       return candidates.reduce((prev, current) => {
         if (current.successRate < prev.successRate) return current;
