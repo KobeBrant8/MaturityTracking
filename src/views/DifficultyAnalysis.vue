@@ -239,7 +239,13 @@
 
           <!-- SVG Chart Area -->
           <div class="svg-chart-container">
-            <svg class="trend-line-svg" viewBox="0 0 500 220" ref="chartSvg">
+            <svg
+              class="trend-line-svg"
+              viewBox="0 0 500 220"
+              ref="chartSvg"
+              @mousemove="handleSvgMouseMove"
+              @mouseleave="handleSvgMouseLeave"
+            >
               <!-- Gradients definitions -->
               <defs>
                 <linearGradient id="rateLineGrad" x1="0" y1="0" x2="0" y2="1">
@@ -319,20 +325,42 @@
                 />
               </g>
 
+              <!-- Guide Line -->
+              <line
+                v-if="hoveredPoint"
+                :x1="hoveredPoint.x"
+                y1="20"
+                :x2="hoveredPoint.x"
+                y2="190"
+                stroke="#cbd5e1"
+                stroke-width="1.5"
+                stroke-dasharray="4 4"
+                pointer-events="none"
+              />
+
+              <!-- Highlight Dot -->
+              <circle
+                v-if="hoveredPoint"
+                :cx="hoveredPoint.x"
+                :cy="hoveredPoint.y"
+                r="7"
+                :fill="chartMode === 'rate' ? '#10b981' : '#8b5cf6'"
+                stroke="#ffffff"
+                stroke-width="2.5"
+                pointer-events="none"
+              />
+
               <!-- Interactive Points -->
-              <g class="chart-points-group">
+              <g class="chart-points-group" style="pointer-events: none;">
                 <circle
                   v-for="(pt, idx) in chartPoints"
                   :key="idx"
                   :cx="pt.x"
                   :cy="pt.y"
-                  r="5"
+                  r="4"
                   :fill="chartMode === 'rate' ? '#10b981' : '#8b5cf6'"
                   stroke="#ffffff"
-                  stroke-width="2"
-                  class="interactive-dot"
-                  @mouseover="showTooltip($event, pt)"
-                  @mouseleave="hideTooltip"
+                  stroke-width="1.5"
                 />
               </g>
             </svg>
@@ -530,6 +558,7 @@ export default {
       currentMonth: new Date().getMonth(),
       selectedDate: null,
       chartMode: 'rate',
+      hoveredPoint: null,
       tooltip: {
         show: false,
         x: 0,
@@ -1045,22 +1074,48 @@ export default {
       if (!dayStat) return false;
       return dayStat.success === dayStat.fail || (dayStat.success === 0 && dayStat.fail === 0);
     },
-    showTooltip(event, pt) {
-      const containerRect = event.target.ownerSVGElement.parentElement.getBoundingClientRect();
-      const clientX = event.clientX;
-      const clientY = event.clientY;
+    handleSvgMouseMove(event) {
+      if (this.chartPoints.length === 0) return;
+      const svg = this.$refs.chartSvg;
+      if (!svg) return;
+
+      const rect = svg.getBoundingClientRect();
+      const clientX = event.clientX - rect.left;
+      const svgX = (clientX / rect.width) * 500;
       
-      this.tooltip = {
-        show: true,
-        x: clientX - containerRect.left - 50,
-        y: clientY - containerRect.top - 60,
-        date: pt.dateString,
-        valueText: this.chartMode === 'rate'
-          ? `成功率: ${pt.value.toFixed(0)}% (成功 ${pt.success} / 失败 ${pt.fail})`
-          : `记录总数: ${pt.value}条 (成功 ${pt.success} / 失败 ${pt.fail})`
-      };
+      let minDistance = Infinity;
+      let nearestPt = null;
+      for (const pt of this.chartPoints) {
+        const dist = Math.abs(pt.x - svgX);
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestPt = pt;
+        }
+      }
+      
+      if (nearestPt) {
+        this.hoveredPoint = nearestPt;
+        
+        const containerRect = svg.parentElement.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        const containerHeight = containerRect.height;
+        
+        const tooltipX = (nearestPt.x / 500) * containerWidth - 50;
+        const tooltipY = (nearestPt.y / 220) * containerHeight - 60;
+        
+        this.tooltip = {
+          show: true,
+          x: tooltipX,
+          y: tooltipY,
+          date: nearestPt.dateString,
+          valueText: this.chartMode === 'rate'
+            ? `成功率: ${nearestPt.value.toFixed(0)}% (成功 ${nearestPt.success} / 失败 ${nearestPt.fail})`
+            : `记录总数: ${nearestPt.value}条 (成功 ${nearestPt.success} / 失败 ${nearestPt.fail})`
+        };
+      }
     },
-    hideTooltip() {
+    handleSvgMouseLeave() {
+      this.hoveredPoint = null;
       this.tooltip.show = false;
     },
     getXCoordinate(dayNum) {
