@@ -180,6 +180,7 @@
             <div v-if="dailyStatsMap[selectedDate]" class="details-stats-summary">
               <span class="stat-pill green">成功: {{ dailyStatsMap[selectedDate].success }}次</span>
               <span class="stat-pill orange">失败: {{ dailyStatsMap[selectedDate].fail }}次</span>
+              <span class="stat-pill gray">不明: {{ dailyStatsMap[selectedDate].unmarked }}次</span>
               <span class="stat-pill total">共: {{ dailyStatsMap[selectedDate].total }}条</span>
               <span class="stat-pill rate" v-if="dailyStatsMap[selectedDate].success + dailyStatsMap[selectedDate].fail > 0">
                 成功率: {{ (dailyStatsMap[selectedDate].success / (dailyStatsMap[selectedDate].success + dailyStatsMap[selectedDate].fail) * 100).toFixed(0) }}%
@@ -514,6 +515,7 @@ export default {
           stats[date] = {
             success: 0,
             fail: 0,
+            unmarked: 0,
             total: 0,
             records: []
           };
@@ -524,6 +526,8 @@ export default {
           dayStat.success++;
         } else if (status === 'orange') {
           dayStat.fail++;
+        } else {
+          dayStat.unmarked++;
         }
         dayStat.records.push({
           name: row.name || '未命名',
