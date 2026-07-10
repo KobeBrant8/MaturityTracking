@@ -1134,14 +1134,16 @@ export default {
   top: 62px;
   right: 16px;
   display: flex;
-  align-items: center;
-  gap: 0;
-  padding: 4px 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 6px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   z-index: 100;
   white-space: nowrap;
   animation: more-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1150,12 +1152,12 @@ export default {
 .more-popover-item {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 5px 8px;
-  font-size: 11px;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
   color: #374151;
   cursor: pointer;
-  border-radius: 14px;
+  border-radius: 8px;
   transition: background-color 0.12s ease;
 
   &:active {
@@ -1164,7 +1166,7 @@ export default {
 }
 
 .more-popover-icon {
-  font-size: 13px;
+  font-size: 16px;
   color: #6b7280;
 
   &.recycle {
