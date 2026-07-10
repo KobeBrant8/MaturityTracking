@@ -603,11 +603,11 @@
             </div>
           </div>
           <!-- Pagination -->
-          <div v-if="filteredUsers.length > 10" class="pagination-container">
+          <div v-if="filteredUsers.length > 5" class="pagination-container">
             <van-pagination
               v-model="currentPage"
               :total-items="filteredUsers.length"
-              :items-per-page="10"
+              :items-per-page="5"
               force-ellipses
               prev-text="上一页"
               next-text="下一页"
@@ -631,12 +631,12 @@
           
           <div v-else class="rectify-groups-list">
             <div
-              v-for="(group, gIdx) in suggestedCorrectionGroups"
-              :key="gIdx"
+              v-for="(group, gIdx) in displayedRectifyGroups"
+              :key="group.users.map(u => u.name).join('-')"
               class="rectify-group-card"
             >
               <div class="group-header">
-                <span class="match-badge">匹配组 #{{ gIdx + 1 }}</span>
+                <span class="match-badge">匹配组 #{{ ((currentRectifyPage - 1) * 5) + gIdx + 1 }}</span>
                 <span class="similarity-text">相似度: {{ (group.similarity * 100).toFixed(0) }}%</span>
               </div>
               <div class="group-names">
@@ -653,6 +653,18 @@
                 </span>
               </div>
               <p class="group-hint">💡 点击上方任意标签，可将本组其他用户名全部“一键合并”为该名称并重算。</p>
+            </div>
+            
+            <!-- Pagination for Rectification -->
+            <div v-if="suggestedCorrectionGroups.length > 5" class="pagination-container">
+              <van-pagination
+                v-model="currentRectifyPage"
+                :total-items="suggestedCorrectionGroups.length"
+                :items-per-page="5"
+                force-ellipses
+                prev-text="上一页"
+                next-text="下一页"
+              />
             </div>
           </div>
         </div>
@@ -748,7 +760,8 @@ export default {
       editTargetNewName: '',
       leaderboardScope: 'all', // 'all' or 'month'
       leaderboardMode: 'easy',  // 'easy' or 'hard'
-      currentPage: 1
+      currentPage: 1,
+      currentRectifyPage: 1
     };
   },
   computed: {
@@ -855,9 +868,14 @@ export default {
       });
     },
     displayedUsers() {
-      const start = (this.currentPage - 1) * 10;
-      const end = start + 10;
+      const start = (this.currentPage - 1) * 5;
+      const end = start + 5;
       return this.filteredUsers.slice(start, end);
+    },
+    displayedRectifyGroups() {
+      const start = (this.currentRectifyPage - 1) * 5;
+      const end = start + 5;
+      return this.suggestedCorrectionGroups.slice(start, end);
     },
     calendarDays() {
       const year = this.currentYear;
@@ -1159,6 +1177,9 @@ export default {
     },
     currentDifficultyFilter() {
       this.currentPage = 1;
+    },
+    suggestedCorrectionGroups() {
+      this.currentRectifyPage = 1;
     }
   },
   created() {
@@ -3224,10 +3245,11 @@ export default {
   /deep/ .van-pagination {
     width: 100%;
     max-width: 320px;
+    gap: 6px; /* Added spacing gap between numbers/buttons */
     
     .van-pagination__item {
       color: #7c3aed;
-      border-radius: 8px;
+      border-radius: 8px !important; /* Forces rounded borders on every single detached button */
       background: #ffffff;
       border: 1px solid #ddd6fe;
       font-size: 13px;
