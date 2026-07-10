@@ -203,7 +203,153 @@
                 </div>
               </div>
             </div>
-            <div v-else class="details-records-empty">该日无记录</div>
+             <div v-else class="details-records-empty">该日无记录</div>
+          </div>
+        </div>
+
+        <!-- Chart: Daily Trend Line Chart -->
+        <div class="chart-card glass" id="card-trend-line-chart">
+          <div class="calendar-header-wrapper">
+            <h2 class="section-title">趋势数据分析</h2>
+            <div class="calendar-nav">
+              <van-icon name="arrow-left" class="nav-arrow" @click="prevMonth" />
+              <span class="current-month-label">{{ currentYear }}年{{ String(currentMonth + 1).padStart(2, '0') }}月</span>
+              <span class="nav-arrow-right-wrapper">
+                <van-icon name="arrow" class="nav-arrow" @click="nextMonth" />
+              </span>
+            </div>
+          </div>
+
+          <div class="chart-toggles">
+            <span
+              class="chart-toggle-btn"
+              :class="{ active: chartMode === 'rate' }"
+              @click="chartMode = 'rate'"
+            >
+              成功率趋势
+            </span>
+            <span
+              class="chart-toggle-btn"
+              :class="{ active: chartMode === 'count' }"
+              @click="chartMode = 'count'"
+            >
+              记录数趋势
+            </span>
+          </div>
+
+          <!-- SVG Chart Area -->
+          <div class="svg-chart-container">
+            <svg class="trend-line-svg" viewBox="0 0 500 220" ref="chartSvg">
+              <!-- Gradients definitions -->
+              <defs>
+                <linearGradient id="rateLineGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10b981" />
+                  <stop offset="100%" stop-color="#3b82f6" />
+                </linearGradient>
+                <linearGradient id="rateAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0" />
+                </linearGradient>
+                <linearGradient id="countLineGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8b5cf6" />
+                  <stop offset="100%" stop-color="#ec4899" />
+                </linearGradient>
+                <linearGradient id="countAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              <!-- Grid Y-Lines and Labels -->
+              <g class="grid-lines-group">
+                <line
+                  v-for="(grid, idx) in yGridLines"
+                  :key="idx"
+                  x1="40"
+                  :y1="grid.y"
+                  x2="480"
+                  :y2="grid.y"
+                  stroke="#e2e8f0"
+                  stroke-dasharray="3 3"
+                />
+                <text
+                  v-for="(grid, idx) in yGridLines"
+                  :key="'lbl-' + idx"
+                  x="32"
+                  :y="grid.y + 4"
+                  text-anchor="end"
+                  class="chart-grid-label"
+                >
+                  {{ grid.label }}
+                </text>
+              </g>
+
+              <!-- X-Axis Line -->
+              <line x1="40" y1="190" x2="480" y2="190" stroke="#cbd5e1" stroke-width="1" />
+
+              <!-- X-Axis Labels (every 5 days) -->
+              <g class="x-labels-group">
+                <text
+                  v-for="dayNum in xAxisDays"
+                  :key="dayNum"
+                  :x="getXCoordinate(dayNum)"
+                  y="206"
+                  text-anchor="middle"
+                  class="chart-grid-label"
+                >
+                  {{ dayNum }}日
+                </text>
+              </g>
+
+              <!-- Chart Area Paths -->
+              <g v-if="chartPoints.length > 0">
+                <!-- Area Path -->
+                <path
+                  :d="chartAreaPath"
+                  :fill="chartMode === 'rate' ? 'url(#rateAreaGrad)' : 'url(#countAreaGrad)'"
+                />
+                <!-- Line Path -->
+                <path
+                  :d="chartLinePath"
+                  fill="none"
+                  :stroke="chartMode === 'rate' ? 'url(#rateLineGrad)' : 'url(#countLineGrad)'"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+
+              <!-- Interactive Points -->
+              <g class="chart-points-group">
+                <circle
+                  v-for="(pt, idx) in chartPoints"
+                  :key="idx"
+                  :cx="pt.x"
+                  :cy="pt.y"
+                  r="5"
+                  :fill="chartMode === 'rate' ? '#10b981' : '#8b5cf6'"
+                  stroke="#ffffff"
+                  stroke-width="2"
+                  class="interactive-dot"
+                  @mouseover="showTooltip($event, pt)"
+                  @mouseleave="hideTooltip"
+                />
+              </g>
+            </svg>
+            
+            <!-- Floating Tooltip -->
+            <div
+              v-if="tooltip.show"
+              class="chart-tooltip-box animate-fade-in"
+              :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
+            >
+              <div class="tooltip-date">{{ tooltip.date }}</div>
+              <div class="tooltip-val">{{ tooltip.valueText }}</div>
+            </div>
+            
+            <div v-if="chartPoints.length === 0" class="chart-empty-state">
+              <span>本月无可用趋势数据</span>
+            </div>
           </div>
         </div>
       </section>
@@ -382,7 +528,15 @@ export default {
       totalFailCount: 0,
       currentYear: new Date().getFullYear(),
       currentMonth: new Date().getMonth(),
-      selectedDate: null
+      selectedDate: null,
+      chartMode: 'rate',
+      tooltip: {
+        show: false,
+        x: 0,
+        y: 0,
+        date: '',
+        valueText: ''
+      }
     };
   },
   computed: {
@@ -552,6 +706,110 @@ export default {
       });
 
       return stats;
+    },
+    yGridLines() {
+      if (this.chartMode === 'rate') {
+        return [
+          { label: '100%', y: 20 },
+          { label: '75%', y: 20 + 170 * 0.25 },
+          { label: '50%', y: 20 + 170 * 0.5 },
+          { label: '25%', y: 20 + 170 * 0.75 },
+          { label: '0%', y: 190 }
+        ];
+      } else {
+        let maxVal = Math.max(...this.calendarDays.map(day => {
+          if (!day.dateString) return 0;
+          return this.dailyStatsMap[day.dateString] ? this.dailyStatsMap[day.dateString].total : 0;
+        }), 4);
+        maxVal = Math.ceil(maxVal / 4) * 4;
+        return [
+          { label: `${maxVal}条`, y: 20 },
+          { label: `${maxVal * 0.75}条`, y: 20 + 170 * 0.25 },
+          { label: `${maxVal * 0.5}条`, y: 20 + 170 * 0.5 },
+          { label: `${maxVal * 0.25}条`, y: 20 + 170 * 0.75 },
+          { label: '0条', y: 190 }
+        ];
+      }
+    },
+    xAxisDays() {
+      const year = this.currentYear;
+      const month = this.currentMonth;
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const result = [1, 5, 10, 15, 20, 25];
+      if (totalDays >= 30) {
+        result.push(30);
+      } else {
+        result.push(totalDays);
+      }
+      return result;
+    },
+    chartPoints() {
+      const year = this.currentYear;
+      const month = this.currentMonth;
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const paddingLeft = 40;
+      const chartWidth = 440;
+      const paddingTop = 20;
+      const chartHeight = 170;
+      const points = [];
+      
+      if (this.chartMode === 'rate') {
+        for (let d = 1; d <= totalDays; d++) {
+          const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const dayStat = this.dailyStatsMap[dateString];
+          if (dayStat && (dayStat.success + dayStat.fail) > 0) {
+            const rate = (dayStat.success / (dayStat.success + dayStat.fail)) * 100;
+            const x = paddingLeft + (d - 1) * (chartWidth / (totalDays - 1));
+            const y = paddingTop + chartHeight - (rate / 100) * chartHeight;
+            points.push({
+              x,
+              y,
+              day: d,
+              value: rate,
+              dateString,
+              success: dayStat.success,
+              fail: dayStat.fail,
+              total: dayStat.total
+            });
+          }
+        }
+      } else {
+        let maxVal = Math.max(...this.calendarDays.map(day => {
+          if (!day.dateString) return 0;
+          return this.dailyStatsMap[day.dateString] ? this.dailyStatsMap[day.dateString].total : 0;
+        }), 4);
+        maxVal = Math.ceil(maxVal / 4) * 4;
+
+        for (let d = 1; d <= totalDays; d++) {
+          const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const dayStat = this.dailyStatsMap[dateString];
+          const count = dayStat ? dayStat.total : 0;
+          const x = paddingLeft + (d - 1) * (chartWidth / (totalDays - 1));
+          const y = paddingTop + chartHeight - (count / maxVal) * chartHeight;
+          points.push({
+            x,
+            y,
+            day: d,
+            value: count,
+            dateString,
+            total: count,
+            success: dayStat ? dayStat.success : 0,
+            fail: dayStat ? dayStat.fail : 0
+          });
+        }
+      }
+      return points;
+    },
+    chartLinePath() {
+      if (this.chartPoints.length === 0) return '';
+      return this.chartPoints.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
+    },
+    chartAreaPath() {
+      if (this.chartPoints.length === 0) return '';
+      const first = this.chartPoints[0];
+      const last = this.chartPoints[this.chartPoints.length - 1];
+      const linePart = this.chartPoints.map(pt => `L ${pt.x} ${pt.y}`).join(' ');
+      return `M ${first.x} 190 ${linePart} L ${last.x} 190 Z`;
     }
   },
   created() {
@@ -786,6 +1044,32 @@ export default {
       const dayStat = this.dailyStatsMap[dateString];
       if (!dayStat) return false;
       return dayStat.success === dayStat.fail || (dayStat.success === 0 && dayStat.fail === 0);
+    },
+    showTooltip(event, pt) {
+      const containerRect = event.target.ownerSVGElement.parentElement.getBoundingClientRect();
+      const clientX = event.clientX;
+      const clientY = event.clientY;
+      
+      this.tooltip = {
+        show: true,
+        x: clientX - containerRect.left - 50,
+        y: clientY - containerRect.top - 60,
+        date: pt.dateString,
+        valueText: this.chartMode === 'rate'
+          ? `成功率: ${pt.value.toFixed(0)}% (成功 ${pt.success} / 失败 ${pt.fail})`
+          : `记录总数: ${pt.value}条 (成功 ${pt.success} / 失败 ${pt.fail})`
+      };
+    },
+    hideTooltip() {
+      this.tooltip.show = false;
+    },
+    getXCoordinate(dayNum) {
+      const year = this.currentYear;
+      const month = this.currentMonth;
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const paddingLeft = 40;
+      const chartWidth = 440;
+      return paddingLeft + (dayNum - 1) * (chartWidth / (totalDays - 1));
     }
   }
 };
@@ -1732,6 +2016,109 @@ export default {
     text-align: center;
     padding: 10px 0;
   }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Chart Trend styles */
+.chart-toggles {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.chart-toggle-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &.active {
+    color: #ffffff;
+    background-color: #7c3aed;
+    border-color: #7c3aed;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  }
+
+  &:active:not(.active) {
+    background-color: #e2e8f0;
+  }
+}
+
+.svg-chart-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 4px;
+}
+
+.trend-line-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-grid-label {
+  font-size: 8px;
+  font-weight: 500;
+  fill: #94a3b8;
+}
+
+.interactive-dot {
+  cursor: pointer;
+  transition: r 0.1s ease, stroke-width 0.1s ease;
+
+  &:hover {
+    r: 7;
+    stroke-width: 3px;
+  }
+}
+
+/* Floating Tooltip styling */
+.chart-tooltip-box {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+
+  .tooltip-date {
+    font-weight: 700;
+    margin-bottom: 2px;
+    color: #e2e8f0;
+  }
+
+  .tooltip-val {
+    font-weight: 500;
+  }
+}
+
+.chart-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+  pointer-events: none;
 }
 </style>
 
