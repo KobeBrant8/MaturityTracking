@@ -2449,40 +2449,43 @@ export default {
 .calendar-grid-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  padding: 0 4px; /* Added slight horizontal padding to avoid touching container edges */
 }
 
 .calendar-week-headers {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
+  margin-bottom: 4px;
   
   .week-header {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: #64748b;
+    padding-bottom: 4px;
   }
 }
 
 .calendar-days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 8px; /* Increased gap slightly for better breathing room */
 }
 
 .calendar-day-cell {
   aspect-ratio: 1;
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px; /* Slightly more rounded corners */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  min-height: 40px;
+  min-height: 36px; /* Reduced min-height to prevent overflow on very small screens */
 
   .day-number {
     font-size: 12px;
