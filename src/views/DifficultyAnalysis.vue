@@ -125,7 +125,7 @@
         <!-- Calendar: Daily Success Rate -->
         <div class="chart-card glass" id="card-success-calendar">
           <div class="calendar-header-wrapper">
-            <h2 class="section-title">每日偷菜成功率日历</h2>
+            <h2 class="section-title"></h2>
             <div class="calendar-nav">
               <van-icon name="arrow-left" class="nav-arrow" @click="prevMonth" />
               <span class="current-month-label">{{ currentYear }}年{{ String(currentMonth + 1).padStart(2, '0') }}月</span>
