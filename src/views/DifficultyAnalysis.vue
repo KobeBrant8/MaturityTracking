@@ -609,9 +609,14 @@
               :total-items="filteredUsers.length"
               :items-per-page="5"
               force-ellipses
-              prev-text="上一页"
-              next-text="下一页"
-            />
+            >
+              <template #prev-text>
+                <van-icon name="arrow-left" />
+              </template>
+              <template #next-text>
+                <van-icon name="arrow" />
+              </template>
+            </van-pagination>
           </div>
         </div>
       </section>
@@ -662,9 +667,14 @@
                 :total-items="suggestedCorrectionGroups.length"
                 :items-per-page="5"
                 force-ellipses
-                prev-text="上一页"
-                next-text="下一页"
-              />
+              >
+                <template #prev-text>
+                  <van-icon name="arrow-left" />
+                </template>
+                <template #next-text>
+                  <van-icon name="arrow" />
+                </template>
+              </van-pagination>
             </div>
           </div>
         </div>
