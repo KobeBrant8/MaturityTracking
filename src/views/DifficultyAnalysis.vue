@@ -646,7 +646,7 @@
                   <span class="similarity-text">相似度: {{ (group.similarity * 100).toFixed(0) }}%</span>
                 </div>
                 <div class="header-actions">
-                  <van-icon name="eye-close" class="ignore-btn" @click="ignoreGroup(group)" title="忽略此组" />
+                  <van-icon name="closed-eye" class="ignore-btn" @click="ignoreGroup(group)" title="忽略此组" />
                 </div>
               </div>
               <div class="group-names">
