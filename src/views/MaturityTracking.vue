@@ -285,11 +285,20 @@
       style="display: none"
       @change="handleImportFile"
     />
+
+    <!-- Import Mode Select ActionSheet -->
+    <van-action-sheet
+      v-model="showImportActionSheet"
+      :actions="importActions"
+      cancel-text="取消"
+      close-on-click-action
+      @select="onImportActionSelect"
+    />
   </div>
 </template>
 
 <script>
-import { Button, Field, Popup, Empty, Icon, Dialog, Toast } from 'vant';
+import { Button, Field, Popup, Empty, Icon, Dialog, Toast, ActionSheet } from 'vant';
 
 const STORAGE_KEY = 'maturity_tracking_data';
 
@@ -302,7 +311,8 @@ export default {
     [Empty.name]: Empty,
     [Icon.name]: Icon,
     [Dialog.name]: Dialog,
-    [Toast.name]: Toast
+    [Toast.name]: Toast,
+    [ActionSheet.name]: ActionSheet
   },
   data() {
     return {
@@ -331,7 +341,13 @@ export default {
       reminderRowId: null,
       reminderName: '',
       reminderTime: '',
-      memoName: ''
+      memoName: '',
+      showImportActionSheet: false,
+      importActions: [
+        { name: '覆盖导入 (覆盖本地全部数据，整库还原)', value: 'overwrite' },
+        { name: '合并去重 (保留本地数据，比对去重新增)', value: 'merge' }
+      ],
+      tempImportedData: null
     };
   },
   computed: {
@@ -758,31 +774,8 @@ export default {
             throw new Error('未包含任何有效的数据格式');
           }
           
-          this.$dialog.confirm({
-            title: '确认导入',
-            message: '导入数据将覆盖当前的全部活跃数据、回收站和状态标记，是否确定？'
-          }).then(() => {
-            const dataToSave = {
-              tableData: importedData.tableData || [],
-              deletedData: importedData.deletedData || [],
-              stolenMap: importedData.stolenMap || {},
-              nextId: importedData.nextId || Math.max(1, ...(importedData.tableData || []).map(r => r.id || 0)) + 1,
-              memoName: importedData.memoName || '',
-              markedIds: importedData.markedIds || [],
-              notifiedIds: importedData.notifiedIds || []
-            };
-            
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-            this.tableData = dataToSave.tableData;
-            this.deletedData = dataToSave.deletedData;
-            this.stolenMap = dataToSave.stolenMap;
-            this.nextId = dataToSave.nextId;
-            this.memoName = dataToSave.memoName;
-            this.markedIds = dataToSave.markedIds;
-            this.notifiedIds = dataToSave.notifiedIds;
-            
-            this.$toast.success('导入成功');
-          }).catch(() => {});
+          this.tempImportedData = importedData;
+          this.showImportActionSheet = true;
           
         } catch (err) {
           console.error(err);
@@ -793,6 +786,116 @@ export default {
         }
       };
       reader.readAsText(file);
+    },
+
+    onImportActionSelect(action) {
+      if (!this.tempImportedData) return;
+      const importedData = this.tempImportedData;
+      this.tempImportedData = null;
+
+      if (action.value === 'overwrite') {
+        this.$dialog.confirm({
+          title: '确认覆盖导入',
+          message: '覆盖导入将清空当前全部的活跃数据、回收站和状态圆点，且不可撤销，是否确定？'
+        }).then(() => {
+          const dataToSave = {
+            tableData: importedData.tableData || [],
+            deletedData: importedData.deletedData || [],
+            stolenMap: importedData.stolenMap || {},
+            nextId: importedData.nextId || Math.max(1, ...(importedData.tableData || []).map(r => r.id || 0)) + 1,
+            memoName: importedData.memoName || '',
+            markedIds: importedData.markedIds || [],
+            notifiedIds: importedData.notifiedIds || []
+          };
+          
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+          this.tableData = dataToSave.tableData;
+          this.deletedData = dataToSave.deletedData;
+          this.stolenMap = dataToSave.stolenMap;
+          this.nextId = dataToSave.nextId;
+          this.memoName = dataToSave.memoName;
+          this.markedIds = dataToSave.markedIds;
+          this.notifiedIds = dataToSave.notifiedIds;
+          
+          this.$toast.success('覆盖导入成功');
+        }).catch(() => {});
+      } else if (action.value === 'merge') {
+        const localTableData = [...this.tableData];
+        const localDeletedData = [...this.deletedData];
+        const localStolenMap = { ...this.stolenMap };
+        
+        let newTableAdded = 0;
+        let newDeletedAdded = 0;
+        
+        const importedTable = importedData.tableData || [];
+        const importedDeleted = importedData.deletedData || [];
+        const importedStolen = importedData.stolenMap || {};
+        
+        // 1. Process active records
+        importedTable.forEach(imp => {
+          const isDuplicate = localTableData.some(local => 
+            local.name === imp.name && 
+            local.upcomingTime === imp.upcomingTime && 
+            local.maturityTime === imp.maturityTime
+          );
+          
+          if (!isDuplicate) {
+            const newId = this.nextId++;
+            const recordCopy = { ...imp, id: newId };
+            
+            if (importedStolen[imp.id]) {
+              localStolenMap[newId] = importedStolen[imp.id];
+            }
+            
+            localTableData.push(recordCopy);
+            newTableAdded++;
+          }
+        });
+        
+        // 2. Process recycle bin records
+        importedDeleted.forEach(imp => {
+          const isDuplicate = localDeletedData.some(local => 
+            local.name === imp.name && 
+            local.upcomingTime === imp.upcomingTime && 
+            local.maturityTime === imp.maturityTime && 
+            local.deletedAt === imp.deletedAt
+          );
+          
+          if (!isDuplicate) {
+            const newId = this.nextId++;
+            const recordCopy = { ...imp, id: newId };
+            
+            if (imp.stolenStatus) {
+              recordCopy.stolenStatus = imp.stolenStatus;
+            } else if (importedStolen[imp.id]) {
+              recordCopy.stolenStatus = importedStolen[imp.id];
+            }
+            
+            localDeletedData.push(recordCopy);
+            newDeletedAdded++;
+          }
+        });
+        
+        const dataToSave = {
+          tableData: localTableData,
+          deletedData: localDeletedData,
+          stolenMap: localStolenMap,
+          nextId: this.nextId,
+          memoName: this.memoName,
+          markedIds: this.markedIds,
+          notifiedIds: this.notifiedIds
+        };
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        this.tableData = localTableData;
+        this.deletedData = localDeletedData;
+        this.stolenMap = localStolenMap;
+        
+        this.$dialog.alert({
+          title: '合并导入完成',
+          message: `成功合并数据！\n- 新增活跃记录: ${newTableAdded} 条\n- 新增回收站记录: ${newDeletedAdded} 条\n- 过滤重复数据: ${importedTable.length + importedDeleted.length - newTableAdded - newDeletedAdded} 条`
+        });
+      }
     },
 
     handleExport() {
