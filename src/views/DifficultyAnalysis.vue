@@ -384,7 +384,7 @@
         <!-- Leaderboard: Top 10 Stealing Leaderboard -->
         <div class="leaderboard-card glass" id="card-leaderboard">
           <div class="calendar-header-wrapper">
-            <h2 class="section-title">偷菜难易度排行榜 (Top 10)</h2>
+            <h2 class="section-title">红黑Top10</h2>
             <div class="calendar-nav">
               <span class="leaderboard-scope-btn" :class="{ active: leaderboardScope === 'all' }" @click="leaderboardScope = 'all'">全部</span>
               <span class="leaderboard-scope-btn" :class="{ active: leaderboardScope === 'month' }" @click="leaderboardScope = 'month'">
