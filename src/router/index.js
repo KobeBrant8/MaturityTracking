@@ -16,6 +16,12 @@ const routes = [
     component: () => import( /* webpackChunkName: "recycle-bin" */ '@/views/RecycleBin.vue'),
     meta: { title:"回收站"}
   },
+  {
+    path: '/difficulty-analysis',
+    name: 'DifficultyAnalysis',
+    component: () => import( /* webpackChunkName: "difficulty-analysis" */ '@/views/DifficultyAnalysis.vue'),
+    meta: { title:"难度分析"}
+  },
 ]
 
 const router = new VueRouter({

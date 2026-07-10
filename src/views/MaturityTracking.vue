@@ -24,6 +24,14 @@
             <van-icon name="add-o" class="action-icon add-icon" />
             <span class="action-text">新增</span>
           </div>
+          <div class="action-btn" @click="$router.push('/difficulty-analysis')">
+            <van-icon name="bar-chart-o" class="action-icon analysis-icon" />
+            <span class="action-text">分析</span>
+          </div>
+          <div class="action-btn" @click="clearExpired">
+            <van-icon name="delete-o" class="action-icon clear-expired-icon" />
+            <span class="action-text">清除过期</span>
+          </div>
         </div>
         <div class="action-btn more-entry" @click.stop="showMoreActions = !showMoreActions">
           <van-icon name="ellipsis" class="action-icon more-icon" />
@@ -34,10 +42,6 @@
 
     <div v-if="showMoreActions" class="more-backdrop" @click="showMoreActions = false"></div>
     <div v-if="showMoreActions" class="more-popover" @click.native.stop>
-      <div class="more-popover-item" @click="handleClearExpired">
-        <van-icon name="delete-o" class="more-popover-icon" />
-        <span>清除过期</span>
-      </div>
       <div class="more-popover-item" @click="handleClearAll">
         <van-icon name="delete" class="more-popover-icon" />
         <span>清除全部</span>
@@ -704,6 +708,11 @@ export default {
       this.$router.push('/recycle-bin');
     },
 
+    handleDifficultyAnalysis() {
+      this.showMoreActions = false;
+      this.$router.push('/difficulty-analysis');
+    },
+
     handleScroll() {
       this.showBackTop = window.scrollY > 300;
     },
@@ -984,6 +993,14 @@ export default {
       color: #8b5cf6;
     }
   }
+
+  .analysis-icon {
+    color: #10b981;
+
+    & + .action-text {
+      color: #10b981;
+    }
+  }
 }
 
 .more-backdrop {
@@ -1035,6 +1052,10 @@ export default {
 
   &.recycle {
     color: #9ca3af;
+  }
+
+  &.analysis {
+    color: #10b981;
   }
 }
 

@@ -1,0 +1,1269 @@
+<template>
+  <div class="difficulty-analysis">
+    <!-- Header -->
+    <div class="analysis-header">
+      <div class="header-left">
+        <van-icon name="arrow-left" class="back-btn" id="btn-back" @click="$router.back()" />
+        <h1 class="page-title">偷菜难易度分析</h1>
+      </div>
+      <div class="header-right">
+        <span class="record-badge" id="badge-total-records">共 {{ totalRecords }} 条记录</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="analysis-content">
+      <!-- 1. Overview Cards -->
+      <section class="overview-grid">
+        <div class="overview-card glass" id="card-success-rate">
+          <div class="card-title">整体成功率</div>
+          <div class="gauge-wrapper">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" class="gauge-track" />
+              <circle
+                cx="50"
+                cy="50"
+                r="42"
+                class="gauge-fill"
+                :style="{
+                  strokeDashoffset: 263.89 * (1 - overallSuccessRate / 100),
+                  stroke: getRateColor(overallSuccessRate)
+                }"
+              />
+              <text x="50" y="55" class="gauge-text">{{ overallSuccessRate.toFixed(0) }}%</text>
+            </svg>
+          </div>
+          <div class="card-footer-info">
+            已成功 <span>{{ totalSuccessCount }}</span> 次 / 失败 <span>{{ totalFailCount }}</span> 次
+          </div>
+        </div>
+
+        <div class="overview-stats-column">
+          <div class="stat-mini-card glass" id="card-stat-users">
+            <div class="stat-icon-wrapper user-icon">
+              <van-icon name="friends-o" />
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">分析用户数</span>
+              <span class="stat-value">{{ analyzedUsers.length }} 人</span>
+            </div>
+          </div>
+
+          <div class="stat-mini-card glass" id="card-stat-easiest">
+            <div class="stat-icon-wrapper easy-icon">
+              <van-icon name="like-o" />
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">最易偷取</span>
+              <span class="stat-value text-ellipsis" :title="easiestUser ? easiestUser.name : '无'">
+                {{ easiestUser ? easiestUser.name : '暂无' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="stat-mini-card glass" id="card-stat-hardest">
+            <div class="stat-icon-wrapper hard-icon">
+              <van-icon name="warning-o" />
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">防守最严</span>
+              <span class="stat-value text-ellipsis" :title="hardestUser ? hardestUser.name : '无'">
+                {{ hardestUser ? hardestUser.name : '暂无' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Charts Section -->
+      <section class="charts-section">
+        <!-- Donut Chart: Difficulty Distribution -->
+        <div class="chart-card glass" id="card-difficulty-donut">
+          <h2 class="section-title">难度分布比例</h2>
+          <div class="donut-chart-container">
+            <div class="donut-chart-wrapper">
+              <svg class="donut-svg" viewBox="0 0 100 100">
+                <circle
+                  v-for="(seg, idx) in donutSegments"
+                  :key="idx"
+                  cx="50"
+                  cy="50"
+                  r="35"
+                  fill="none"
+                  :stroke="seg.color"
+                  stroke-width="12"
+                  :stroke-dasharray="`${seg.length} 219.91`"
+                  :stroke-dashoffset="-seg.offset"
+                  class="donut-segment"
+                  transform="rotate(-90 50 50)"
+                />
+                <circle cx="50" cy="50" r="28" fill="#ffffff" />
+              </svg>
+              <div class="donut-center-label">
+                <span class="num">{{ analyzedUsers.length }}</span>
+                <span class="label">分析对象</span>
+              </div>
+            </div>
+            
+            <div class="donut-legend">
+              <div
+                v-for="item in difficultyStatsList"
+                :key="item.key"
+                class="legend-item"
+                @click="filterDifficulty(item.key)"
+                :class="{ active: currentDifficultyFilter === item.key }"
+              >
+                <span class="legend-color-dot" :style="{ backgroundColor: item.color }"></span>
+                <span class="legend-name">{{ item.name }}</span>
+                <span class="legend-count">{{ item.count }}人</span>
+                <span class="legend-pct">({{ item.percentage }}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </section>
+
+      <!-- 3. Search and User List -->
+      <section class="user-list-section glass" id="card-users-list">
+        <div class="list-controls">
+          <div class="search-box">
+            <van-icon name="search" class="search-icon" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="search-input"
+              id="input-user-search"
+              placeholder="搜索用户名..."
+            />
+            <van-icon
+              v-if="searchQuery"
+              name="clear"
+              class="clear-icon"
+              @click="searchQuery = ''"
+            />
+          </div>
+          
+          <div class="filter-tabs">
+            <span
+              class="filter-tab"
+              :class="{ active: currentDifficultyFilter === 'all' }"
+              @click="currentDifficultyFilter = 'all'"
+            >
+              全部
+            </span>
+            <span
+              class="filter-tab easy"
+              :class="{ active: currentDifficultyFilter === 'easy' }"
+              @click="currentDifficultyFilter = 'easy'"
+            >
+              容易
+            </span>
+            <span
+              class="filter-tab hard"
+              :class="{ active: currentDifficultyFilter === 'hard' }"
+              @click="currentDifficultyFilter = 'hard'"
+            >
+              困难
+            </span>
+            <span
+              class="filter-tab unknown"
+              :class="{ active: currentDifficultyFilter === 'unknown' }"
+              @click="currentDifficultyFilter = 'unknown'"
+            >
+              不明
+            </span>
+          </div>
+        </div>
+
+        <div class="user-list-wrapper">
+          <van-empty v-if="filteredUsers.length === 0" description="未找到匹配的用户分析" />
+
+          <div v-else class="user-cards-list">
+            <div
+              v-for="user in filteredUsers"
+              :key="user.name"
+              class="user-analysis-card"
+              :class="user.difficulty"
+              @click="toggleUserExpand(user.name)"
+            >
+              <div class="user-card-summary">
+                <div class="user-main-info">
+                  <div class="user-avatar" :style="{ background: getDifficultyGradient(user.difficulty) }">
+                    {{ user.name.charAt(0) }}
+                  </div>
+                  <div class="user-title-box">
+                    <div class="user-name-wrapper">
+                      <span class="user-name">{{ user.name }}</span>
+                      <span class="copy-badge" @click.stop="copyUserName(user.name)">
+                        <van-icon name="copy-o" /> 复制
+                      </span>
+                    </div>
+                    <div class="user-record-summary-text">
+                      记录 {{ user.total }} 次 (成功 {{ user.success }} / 失败 {{ user.fail }})
+                    </div>
+                  </div>
+                </div>
+
+                <div class="user-badge-info">
+                  <span class="difficulty-badge" :class="user.difficulty">
+                    {{ user.difficultyText }}
+                  </span>
+                  <span class="success-rate-text" v-if="user.difficulty !== 'unknown'">
+                    {{ user.successRate.toFixed(0) }}% 成功率
+                  </span>
+                </div>
+              </div>
+
+              <!-- Expanded Details -->
+              <div
+                v-if="expandedUsers.includes(user.name)"
+                class="user-card-details animate-expand"
+                @click.stop
+              >
+                <div class="details-divider"></div>
+                <div class="details-grid">
+                  <div class="detail-item">
+                    <span class="detail-label">成功率详情</span>
+                    <div class="detail-progress-bar">
+                      <div class="progress-bg">
+                        <div
+                          class="progress-fill"
+                          :style="{
+                            width: user.successRate + '%',
+                            background: getDifficultyColor(user.difficulty)
+                          }"
+                        ></div>
+                      </div>
+                      <span class="progress-text">{{ user.successRate.toFixed(1) }}%</span>
+                    </div>
+                  </div>
+
+                  <div class="detail-item">
+                    <span class="detail-label">高频成熟时段</span>
+                    <span class="detail-value text-highlight">
+                      <van-icon name="clock-o" /> {{ user.favoriteHourText }}
+                    </span>
+                  </div>
+
+                  <div class="detail-item">
+                    <span class="detail-label">历史状态分布</span>
+                    <div class="status-distribution">
+                      <span class="status-pill green">成功: {{ user.success }}次</span>
+                      <span class="status-pill orange">失败: {{ user.fail }}次</span>
+                      <span class="status-pill gray" v-if="user.unmarked > 0">未标注: {{ user.unmarked }}次</span>
+                    </div>
+                  </div>
+
+                  <div class="detail-item">
+                    <span class="detail-label">数据来源占比</span>
+                    <span class="detail-value text-muted">
+                      活跃记录: {{ user.sources.filter(s => s === 'active').length }} / 
+                      回收站历史: {{ user.sources.filter(s => s === 'deleted').length }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script>
+import { Icon, Empty, Toast } from 'vant';
+
+const STORAGE_KEY = 'maturity_tracking_data';
+
+export default {
+  name: 'DifficultyAnalysis',
+  components: {
+    [Icon.name]: Icon,
+    [Empty.name]: Empty,
+    [Toast.name]: Toast
+  },
+  data() {
+    return {
+      tableData: [],
+      deletedData: [],
+      stolenMap: {},
+      analyzedUsers: [],
+      searchQuery: '',
+      currentDifficultyFilter: 'all',
+      expandedUsers: [],
+      totalRecords: 0,
+      totalSuccessCount: 0,
+      totalFailCount: 0
+    };
+  },
+  computed: {
+    overallSuccessRate() {
+      const totalAttempts = this.totalSuccessCount + this.totalFailCount;
+      return totalAttempts > 0 ? (this.totalSuccessCount / totalAttempts) * 100 : 0;
+    },
+    easiestUser() {
+      // High success rate with at least 1 scored attempt
+      const candidates = this.analyzedUsers.filter(u => u.scoredAttempts > 0);
+      if (candidates.length === 0) return null;
+      return candidates.reduce((prev, current) => {
+        if (current.successRate > prev.successRate) return current;
+        if (current.successRate === prev.successRate && current.success > prev.success) return current;
+        return prev;
+      }, candidates[0]);
+    },
+    hardestUser() {
+      // Low success rate with at least 1 scored attempt
+      const candidates = this.analyzedUsers.filter(u => u.scoredAttempts > 0);
+      if (candidates.length === 0) return null;
+      return candidates.reduce((prev, current) => {
+        if (current.successRate < prev.successRate) return current;
+        if (current.successRate === prev.successRate && current.fail > prev.fail) return current;
+        return prev;
+      }, candidates[0]);
+    },
+
+    difficultyStats() {
+      const stats = {
+        easy: 0,
+        hard: 0,
+        unknown: 0
+      };
+      this.analyzedUsers.forEach(u => {
+        stats[u.difficulty]++;
+      });
+      return stats;
+    },
+    difficultyStatsList() {
+      const total = this.analyzedUsers.length || 1;
+      const stats = this.difficultyStats;
+      return [
+        { key: 'easy', name: '容易', count: stats.easy, percentage: ((stats.easy / total) * 100).toFixed(0), color: '#10b981' },
+        { key: 'hard', name: '困难', count: stats.hard, percentage: ((stats.hard / total) * 100).toFixed(0), color: '#f43f5e' },
+        { key: 'unknown', name: '不明', count: stats.unknown, percentage: ((stats.unknown / total) * 100).toFixed(0), color: '#9ca3af' }
+      ];
+    },
+    donutSegments() {
+      const total = this.analyzedUsers.length;
+      if (total === 0) {
+        return [{ color: '#e5e7eb', length: 219.91, offset: 0 }]; // Empty state gray ring
+      }
+      
+      const stats = this.difficultyStats;
+      const ringCircumference = 219.91; // 2 * pi * r (r=35)
+      
+      const segments = [
+        { key: 'easy', count: stats.easy, color: '#10b981' },
+        { key: 'hard', count: stats.hard, color: '#f43f5e' },
+        { key: 'unknown', count: stats.unknown, color: '#9ca3af' }
+      ];
+
+      let currentOffset = 0;
+      return segments
+        .filter(seg => seg.count > 0)
+        .map(seg => {
+          const length = (seg.count / total) * ringCircumference;
+          const segmentData = {
+            color: seg.color,
+            length,
+            offset: currentOffset
+          };
+          currentOffset += length;
+          return segmentData;
+        });
+    },
+    filteredUsers() {
+      let result = this.analyzedUsers;
+
+      // Filter by search query
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        result = result.filter(u => u.name.toLowerCase().includes(query));
+      }
+
+      // Filter by difficulty tab
+      if (this.currentDifficultyFilter !== 'all') {
+        result = result.filter(u => u.difficulty === this.currentDifficultyFilter);
+      }
+
+      // Sort by record count, then by success rate desc
+      return [...result].sort((a, b) => {
+        if (b.total !== a.total) {
+          return b.total - a.total;
+        }
+        return b.successRate - a.successRate;
+      });
+    }
+  },
+  created() {
+    this.loadAndAnalyzeData();
+  },
+  methods: {
+    loadAndAnalyzeData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          this.tableData = parsed.tableData || [];
+          this.deletedData = parsed.deletedData || [];
+          this.stolenMap = parsed.stolenMap || {};
+        }
+        this.runAnalysis();
+      } catch (e) {
+        console.error('加载分析数据失败:', e);
+        this.$toast.fail('分析数据加载失败');
+      }
+    },
+    runAnalysis() {
+      const userMap = {};
+      this.totalRecords = this.tableData.length + this.deletedData.length;
+      
+      let successCount = 0;
+      let failCount = 0;
+
+      const addRecord = (name, status, time, source) => {
+        if (!name) return;
+        const cleanName = name.trim();
+        if (!cleanName) return;
+
+        if (!userMap[cleanName]) {
+          userMap[cleanName] = {
+            name: cleanName,
+            total: 0,
+            success: 0,
+            fail: 0,
+            unmarked: 0,
+            times: [],
+            sources: []
+          };
+        }
+
+        const user = userMap[cleanName];
+        user.total++;
+        user.sources.push(source);
+        if (time) user.times.push(time);
+
+        if (status === 'green') {
+          user.success++;
+          successCount++;
+        } else if (status === 'orange') {
+          user.fail++;
+          failCount++;
+        } else {
+          user.unmarked++;
+        }
+      };
+
+      // Active records
+      this.tableData.forEach(row => {
+        const status = this.stolenMap[row.id] || '';
+        addRecord(row.name, status, row.maturityTime, 'active');
+      });
+
+      // Deleted records
+      this.deletedData.forEach(row => {
+        const status = row.stolenStatus || this.stolenMap[row.id] || '';
+        addRecord(row.name, status, row.maturityTime, 'deleted');
+      });
+
+      this.totalSuccessCount = successCount;
+      this.totalFailCount = failCount;
+
+      // Transform map to detailed objects list
+      this.analyzedUsers = Object.values(userMap).map(user => {
+        const scoredAttempts = user.success + user.fail;
+        const successRate = scoredAttempts > 0 ? (user.success / scoredAttempts) * 100 : 0;
+        
+        let difficulty = 'unknown';
+        let difficultyText = '不明';
+        
+        if (user.success > user.fail) {
+          difficulty = 'easy';
+          difficultyText = '容易';
+        } else if (user.fail > user.success) {
+          difficulty = 'hard';
+          difficultyText = '困难';
+        } else {
+          difficulty = 'unknown';
+          difficultyText = '不明';
+        }
+
+        // Calculate favorite maturity window
+        let favoriteHourText = '暂无时间数据';
+        if (user.times.length > 0) {
+          const hourCounts = {};
+          user.times.forEach(t => {
+            const parts = t.split(':');
+            if (parts.length > 0) {
+              const hr = parseInt(parts[0], 10);
+              if (!isNaN(hr)) {
+                hourCounts[hr] = (hourCounts[hr] || 0) + 1;
+              }
+            }
+          });
+          let maxCount = 0;
+          let bestHr = null;
+          for (const [hr, count] of Object.entries(hourCounts)) {
+            if (count > maxCount) {
+              maxCount = count;
+              bestHr = parseInt(hr, 10);
+            }
+          }
+          if (bestHr !== null) {
+            const startHour = String(bestHr).padStart(2, '0');
+            const endHour = String((bestHr + 1) % 24).padStart(2, '0');
+            favoriteHourText = `${startHour}:00 - ${endHour}:00`;
+          }
+        }
+
+        return {
+          ...user,
+          scoredAttempts,
+          successRate,
+          difficulty,
+          difficultyText,
+          favoriteHourText
+        };
+      });
+    },
+    filterDifficulty(key) {
+      if (this.currentDifficultyFilter === key) {
+        this.currentDifficultyFilter = 'all';
+      } else {
+        this.currentDifficultyFilter = key;
+      }
+    },
+    toggleUserExpand(name) {
+      const idx = this.expandedUsers.indexOf(name);
+      if (idx > -1) {
+        this.expandedUsers.splice(idx, 1);
+      } else {
+        this.expandedUsers.push(name);
+      }
+    },
+
+    getRateColor(rate) {
+      if (rate >= 75) return '#10b981'; // Easy (green)
+      if (rate >= 40) return '#f59e0b'; // Medium (orange)
+      return '#f43f5e'; // Hard (red)
+    },
+    getDifficultyColor(difficulty) {
+      if (difficulty === 'easy') return '#10b981';
+      if (difficulty === 'hard') return '#f43f5e';
+      return '#9ca3af';
+    },
+    getDifficultyGradient(difficulty) {
+      if (difficulty === 'easy') return 'linear-gradient(135deg, #34d399 0%, #10b981 100%)';
+      if (difficulty === 'hard') return 'linear-gradient(135deg, #f87171 0%, #f43f5e 100%)';
+      return 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)';
+    },
+    copyUserName(name) {
+      if (!name) return;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(name).then(() => {
+          this.$toast.success('已复制');
+        }).catch(() => {
+          this.fallbackCopy(name);
+        });
+      } else {
+        this.fallbackCopy(name);
+      }
+    },
+    fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        this.$toast.success('已复制');
+      } catch (e) {
+        this.$toast.fail('复制失败');
+      }
+      document.body.removeChild(textarea);
+    }
+  }
+};
+</script>
+
+<style lang="less" scoped>
+.difficulty-analysis {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  padding-bottom: 30px;
+  color: #1e293b;
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .back-btn {
+    font-size: 22px;
+    color: #475569;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+
+    &:active {
+      background-color: #f1f5f9;
+    }
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #0f172a;
+  }
+
+  .record-badge {
+    font-size: 12px;
+    background-color: #f1f5f9;
+    color: #64748b;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+}
+
+.analysis-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Glassmorphism base styling */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* 1. Overview Grid */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.overview-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px 16px;
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+
+  .gauge-wrapper {
+    width: 90px;
+    height: 90px;
+    position: relative;
+  }
+
+  .gauge-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .gauge-track {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 8;
+  }
+
+  .gauge-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 263.89; // 2 * pi * r (r=42)
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.8s ease-out;
+  }
+
+  .gauge-text {
+    font-size: 20px;
+    font-weight: 800;
+    fill: #0f172a;
+    text-anchor: middle;
+    font-family: inherit;
+  }
+
+  .card-footer-info {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 10px;
+    
+    span {
+      font-weight: 600;
+      color: #0f172a;
+    }
+  }
+}
+
+.overview-stats-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  flex: 1;
+
+  .stat-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 18px;
+
+    &.user-icon {
+      background-color: #e0f2fe;
+      color: #0284c7;
+    }
+
+    &.easy-icon {
+      background-color: #dcfce7;
+      color: #16a34a;
+    }
+
+    &.hard-icon {
+      background-color: #ffe4e6;
+      color: #dc2626;
+    }
+  }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    .stat-label {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+  }
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2. Charts Section */
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-card {
+  .section-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .chart-subtitle {
+    margin: -8px 0 12px 0;
+    font-size: 11px;
+    color: #64748b;
+  }
+}
+
+/* Donut Chart Distribution styling */
+.donut-chart-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0;
+}
+
+.donut-chart-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+
+  .donut-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .donut-segment {
+    transition: stroke-dashoffset 0.5s ease;
+  }
+
+  .donut-center-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+
+    .num {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1;
+    }
+
+    .label {
+      font-size: 8px;
+      color: #64748b;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+  }
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #475569;
+    padding: 3px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &.active {
+      background-color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    &:active {
+      background-color: #e2e8f0;
+    }
+
+    .legend-color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    .legend-name {
+      flex: 1;
+    }
+
+    .legend-count {
+      color: #0f172a;
+      margin-right: 6px;
+    }
+
+    .legend-pct {
+      color: #94a3b8;
+    }
+  }
+}
+
+
+
+/* 3. Search and User List */
+.user-list-section {
+  padding-bottom: 24px;
+}
+
+.list-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 16px;
+    color: #94a3b8;
+  }
+
+  .clear-icon {
+    position: absolute;
+    right: 12px;
+    font-size: 16px;
+    color: #94a3b8;
+    cursor: pointer;
+  }
+
+  .search-input {
+    width: 100%;
+    height: 38px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 0 36px;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s;
+
+    &:focus {
+      border-color: #7c3aed;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+  }
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+
+  &::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .filter-tab {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &.active {
+      color: #ffffff;
+      border-color: transparent;
+
+      &.easy { background-color: #10b981; }
+      &.medium { background-color: #f59e0b; }
+      &.hard { background-color: #f43f5e; }
+      &.unknown { background-color: #9ca3af; }
+      &:not(.easy):not(.medium):not(.hard):not(.unknown) { background-color: #475569; }
+    }
+
+    &:active:not(.active) {
+      background-color: #e2e8f0;
+    }
+  }
+}
+
+.user-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-analysis-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #ffffff;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  }
+
+  &.easy {
+    border-left: 4px solid #10b981;
+    &:hover { border-color: #a7f3d0; border-left-color: #10b981; }
+  }
+  &.medium {
+    border-left: 4px solid #f59e0b;
+    &:hover { border-color: #fde68a; border-left-color: #f59e0b; }
+  }
+  &.hard {
+    border-left: 4px solid #f43f5e;
+    &:hover { border-color: #fecdd3; border-left-color: #f43f5e; }
+  }
+  &.unknown {
+    border-left: 4px solid #9ca3af;
+    &:hover { border-color: #e5e7eb; border-left-color: #9ca3af; }
+  }
+}
+
+.user-card-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+}
+
+.user-main-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.15);
+  }
+
+  .user-title-box {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .user-name-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 110px;
+    }
+
+    .copy-badge {
+      font-size: 9px;
+      background-color: #f1f5f9;
+      color: #475569;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      border: 1px solid #cbd5e1;
+
+      &:active {
+        background-color: #e2e8f0;
+      }
+    }
+  }
+
+  .user-record-summary-text {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 1px;
+  }
+}
+
+.user-badge-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+
+  .difficulty-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    
+    &.easy { background-color: #dcfce7; color: #15803d; }
+    &.medium { background-color: #fef3c7; color: #b45309; }
+    &.hard { background-color: #ffe4e6; color: #b91c1c; }
+    &.unknown { background-color: #f3f4f6; color: #4b5563; }
+  }
+
+  .success-rate-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+}
+
+/* Expanded section */
+.user-card-details {
+  padding: 0 12px 12px 12px;
+
+  .details-divider {
+    height: 1px;
+    background-color: #f1f5f9;
+    margin-bottom: 10px;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+
+    .detail-label {
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .detail-value {
+      font-weight: 600;
+
+      &.text-highlight {
+        color: #7c3aed;
+        background-color: #f5f3ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid #ddd6fe;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+      
+      &.text-muted {
+        color: #475569;
+      }
+    }
+  }
+
+  .detail-progress-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 65%;
+
+    .progress-bg {
+      flex: 1;
+      height: 6px;
+      background-color: #f1f5f9;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-weight: 600;
+      color: #475569;
+      min-width: 32px;
+      text-align: right;
+    }
+  }
+
+  .status-distribution {
+    display: flex;
+    gap: 4px;
+
+    .status-pill {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 500;
+
+      &.green { background-color: #dcfce7; color: #15803d; }
+      &.orange { background-color: #ffe4e6; color: #b91c1c; }
+      &.gray { background-color: #f3f4f6; color: #4b5563; }
+    }
+  }
+}
+
+/* Micro-animations */
+.animate-expand {
+  animation: expand-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out forwards;
+}
+
+@keyframes expand-down {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+</style>
