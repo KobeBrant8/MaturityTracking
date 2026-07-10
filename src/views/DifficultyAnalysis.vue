@@ -79,7 +79,9 @@
       <section class="charts-section">
         <!-- Donut Chart: Difficulty Distribution -->
         <div class="chart-card glass" id="card-difficulty-donut">
-          <h2 class="section-title">难度分布比例</h2>
+          <div class="calendar-header-wrapper">
+            <h2 class="section-title">难度分布比例</h2>
+          </div>
           <div class="donut-chart-container">
             <div class="donut-chart-wrapper">
               <svg class="donut-svg" viewBox="0 0 100 100">
@@ -600,13 +602,16 @@
               </div>
             </div>
           </div>
-          <!-- Redesigned Load More Button -->
-          <div v-if="filteredUsers.length > displayLimit" class="load-more-container">
-            <button class="load-more-btn" @click="displayLimit += 10">
-              <span>展开更多用户</span>
-              <span class="remaining-badge">余下 {{ filteredUsers.length - displayLimit }}</span>
-              <van-icon name="arrow-down" class="btn-arrow-icon" />
-            </button>
+          <!-- Pagination -->
+          <div v-if="filteredUsers.length > 10" class="pagination-container">
+            <van-pagination
+              v-model="currentPage"
+              :total-items="filteredUsers.length"
+              :items-per-page="10"
+              force-ellipses
+              prev-text="上一页"
+              next-text="下一页"
+            />
           </div>
         </div>
       </section>
@@ -699,7 +704,7 @@
 </template>
 
 <script>
-import { Icon, Empty, Toast, Dialog, Field, Popup } from 'vant';
+import { Icon, Empty, Toast, Dialog, Field, Popup, Pagination } from 'vant';
 
 const STORAGE_KEY = 'maturity_tracking_data';
 
@@ -711,7 +716,8 @@ export default {
     [Toast.name]: Toast,
     [Dialog.Component.name]: Dialog.Component,
     [Field.name]: Field,
-    [Popup.name]: Popup
+    [Popup.name]: Popup,
+    [Pagination.name]: Pagination
   },
   data() {
     return {
@@ -742,7 +748,7 @@ export default {
       editTargetNewName: '',
       leaderboardScope: 'all', // 'all' or 'month'
       leaderboardMode: 'easy',  // 'easy' or 'hard'
-      displayLimit: 10
+      currentPage: 1
     };
   },
   computed: {
@@ -849,7 +855,9 @@ export default {
       });
     },
     displayedUsers() {
-      return this.filteredUsers.slice(0, this.displayLimit);
+      const start = (this.currentPage - 1) * 10;
+      const end = start + 10;
+      return this.filteredUsers.slice(start, end);
     },
     calendarDays() {
       const year = this.currentYear;
@@ -1147,10 +1155,10 @@ export default {
   },
   watch: {
     searchQuery() {
-      this.displayLimit = 10;
+      this.currentPage = 1;
     },
     currentDifficultyFilter() {
-      this.displayLimit = 10;
+      this.currentPage = 1;
     }
   },
   created() {
@@ -2323,6 +2331,24 @@ export default {
 
   .section-title {
     margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.2;
+    text-align: left;
+
+    &:not(:empty)::before {
+      content: "";
+      width: 4px;
+      height: 16px;
+      background: linear-gradient(to bottom, #7c3aed, #6366f1);
+      border-radius: 2px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
   }
 }
 
@@ -3188,66 +3214,44 @@ export default {
   }
 }
 
-/* Load More styling */
-.load-more-container {
+/* Pagination styling */
+.pagination-container {
+  margin-top: 20px;
+  padding: 10px 0;
   display: flex;
   justify-content: center;
-  margin: 20px 0 8px;
-}
 
-.load-more-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #7c3aed;
-  background: rgba(245, 243, 255, 0.7);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(221, 214, 254, 0.8);
-  border-radius: 24px;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
-
-  .remaining-badge {
-    font-size: 10px;
-    font-weight: 700;
-    color: #ffffff;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-    padding: 2px 8px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
-  }
-
-  .btn-arrow-icon {
-    font-size: 12px;
-    color: #7c3aed;
-    transition: transform 0.2s ease;
-  }
-
-  &:hover {
-    color: #ffffff;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-    border-color: #7c3aed;
-    box-shadow: 0 6px 16px rgba(124, 58, 237, 0.3);
+  /deep/ .van-pagination {
+    width: 100%;
+    max-width: 320px;
     
-    .remaining-badge {
-      background: #ffffff;
+    .van-pagination__item {
       color: #7c3aed;
-      box-shadow: none;
-    }
-    
-    .btn-arrow-icon {
-      color: #ffffff;
-      transform: translateY(2px);
-    }
-  }
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid #ddd6fe;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
 
-  &:active {
-    transform: scale(0.96);
-    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
+      &.van-pagination__item--active {
+        color: #ffffff;
+        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        border-color: #7c3aed;
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+      }
+
+      &.van-pagination__item--disabled {
+        color: #cbd5e1;
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        opacity: 0.6;
+      }
+      
+      &:active:not(.van-pagination__item--disabled):not(.van-pagination__item--active) {
+        background-color: #f5f3ff;
+      }
+    }
   }
 }
 </style>
