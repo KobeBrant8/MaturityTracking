@@ -4,7 +4,7 @@
     <div class="analysis-header">
       <div class="header-left">
         <van-icon name="arrow-left" class="back-btn" id="btn-back" @click="$router.back()" />
-        <h1 class="page-title">偷菜难易度分析</h1>
+        <h1 class="page-title">数据分析</h1>
       </div>
       <div class="header-right">
         <span class="record-badge" id="badge-total-records">共 {{ totalRecords }} 条记录</span>
