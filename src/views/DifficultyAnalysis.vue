@@ -122,7 +122,89 @@
           </div>
         </div>
 
-
+        <!-- Calendar: Daily Success Rate -->
+        <div class="chart-card glass" id="card-success-calendar">
+          <div class="calendar-header-wrapper">
+            <h2 class="section-title">每日偷菜成功率日历</h2>
+            <div class="calendar-nav">
+              <van-icon name="arrow-left" class="nav-arrow" @click="prevMonth" />
+              <span class="current-month-label">{{ currentYear }}年{{ String(currentMonth + 1).padStart(2, '0') }}月</span>
+              <span class="nav-arrow-right-wrapper">
+                <van-icon name="arrow" class="nav-arrow" @click="nextMonth" />
+              </span>
+            </div>
+          </div>
+          
+          <div class="calendar-grid-container">
+            <!-- Week headers -->
+            <div class="calendar-week-headers">
+              <span v-for="w in ['日', '一', '二', '三', '四', '五', '六']" :key="w" class="week-header">{{ w }}</span>
+            </div>
+            
+            <!-- Days grid -->
+            <div class="calendar-days-grid">
+              <div
+                v-for="(day, idx) in calendarDays"
+                :key="idx"
+                class="calendar-day-cell"
+                :class="{
+                  'empty-cell': !day.dayNum,
+                  'has-records': day.dateString && dailyStatsMap[day.dateString],
+                  'active-selected': day.dateString && selectedDate === day.dateString,
+                  'success-day': day.dateString && isSuccessDay(day.dateString),
+                  'fail-day': day.dateString && isFailDay(day.dateString),
+                  'neutral-day': day.dateString && isNeutralDay(day.dateString)
+                }"
+                @click="selectCalendarDate(day.dateString)"
+              >
+                <template v-if="day.dayNum">
+                  <span class="day-number">{{ day.dayNum }}</span>
+                  <span
+                    v-if="dailyStatsMap[day.dateString]"
+                    class="day-record-count-badge"
+                  >
+                    {{ dailyStatsMap[day.dateString].total }}条
+                  </span>
+                </template>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Selected Day Details Panel -->
+          <div v-if="selectedDate" class="selected-day-details animate-fade-in">
+            <div class="details-header">
+              <span class="details-title">📅 {{ selectedDate }} 详情</span>
+              <span class="close-details-btn" @click="selectedDate = null">收起</span>
+            </div>
+            
+            <div v-if="dailyStatsMap[selectedDate]" class="details-stats-summary">
+              <span class="stat-pill green">成功: {{ dailyStatsMap[selectedDate].success }}次</span>
+              <span class="stat-pill orange">失败: {{ dailyStatsMap[selectedDate].fail }}次</span>
+              <span class="stat-pill total">共: {{ dailyStatsMap[selectedDate].total }}条</span>
+              <span class="stat-pill rate" v-if="dailyStatsMap[selectedDate].success + dailyStatsMap[selectedDate].fail > 0">
+                成功率: {{ (dailyStatsMap[selectedDate].success / (dailyStatsMap[selectedDate].success + dailyStatsMap[selectedDate].fail) * 100).toFixed(0) }}%
+              </span>
+            </div>
+            
+            <div v-if="dailyStatsMap[selectedDate]" class="details-records-list">
+              <div
+                v-for="(rec, idx) in dailyStatsMap[selectedDate].records"
+                :key="idx"
+                class="detail-record-row"
+              >
+                <div class="rec-user-info">
+                  <span class="dot-status" :class="rec.status || 'gray'"></span>
+                  <span class="user-name">{{ rec.name }}</span>
+                </div>
+                <div class="rec-meta">
+                  <span class="rec-time">{{ rec.time || '未设置时间' }}</span>
+                  <span class="rec-source" :class="rec.source">{{ rec.source === 'active' ? '活跃' : '已删除' }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="details-records-empty">该日无记录</div>
+          </div>
+        </div>
       </section>
 
       <!-- 3. Search and User List -->
@@ -296,7 +378,10 @@ export default {
       expandedUsers: [],
       totalRecords: 0,
       totalSuccessCount: 0,
-      totalFailCount: 0
+      totalFailCount: 0,
+      currentYear: new Date().getFullYear(),
+      currentMonth: new Date().getMonth(),
+      selectedDate: null
     };
   },
   computed: {
@@ -395,6 +480,68 @@ export default {
         }
         return b.successRate - a.successRate;
       });
+    },
+    calendarDays() {
+      const year = this.currentYear;
+      const month = this.currentMonth;
+      const firstDay = new Date(year, month, 1);
+      const startDayOfWeek = firstDay.getDay(); // 0 is Sunday, 6 is Saturday
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const days = [];
+      for (let i = 0; i < startDayOfWeek; i++) {
+        days.push({ dayNum: null, dateString: null });
+      }
+      for (let day = 1; day <= totalDays; day++) {
+        const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        days.push({
+          dayNum: day,
+          dateString
+        });
+      }
+      return days;
+    },
+    dailyStatsMap() {
+      const stats = {};
+      const process = (row, status, date) => {
+        if (!date) return;
+        if (!stats[date]) {
+          stats[date] = {
+            success: 0,
+            fail: 0,
+            total: 0,
+            records: []
+          };
+        }
+        const dayStat = stats[date];
+        dayStat.total++;
+        if (status === 'green') {
+          dayStat.success++;
+        } else if (status === 'orange') {
+          dayStat.fail++;
+        }
+        dayStat.records.push({
+          name: row.name || '未命名',
+          time: row.maturityTime,
+          status,
+          source: row.deletedAt ? 'deleted' : 'active'
+        });
+      };
+
+      const todayStr = this.getLocalDateString(new Date());
+      this.tableData.forEach(row => {
+        const status = this.stolenMap[row.id] || '';
+        process(row, status, todayStr);
+      });
+
+      this.deletedData.forEach(row => {
+        const status = row.stolenStatus || this.stolenMap[row.id] || '';
+        if (row.deletedAt) {
+          const dateStr = this.getLocalDateString(row.deletedAt);
+          process(row, status, dateStr);
+        }
+      });
+
+      return stats;
     }
   },
   created() {
@@ -585,6 +732,50 @@ export default {
         this.$toast.fail('复制失败');
       }
       document.body.removeChild(textarea);
+    },
+    prevMonth() {
+      if (this.currentMonth === 0) {
+        this.currentMonth = 11;
+        this.currentYear--;
+      } else {
+        this.currentMonth--;
+      }
+      this.selectedDate = null;
+    },
+    nextMonth() {
+      if (this.currentMonth === 11) {
+        this.currentMonth = 0;
+        this.currentYear++;
+      } else {
+        this.currentMonth++;
+      }
+      this.selectedDate = null;
+    },
+    selectCalendarDate(dateString) {
+      if (!dateString) return;
+      this.selectedDate = this.selectedDate === dateString ? null : dateString;
+    },
+    getLocalDateString(isoStringOrDate) {
+      const d = new Date(isoStringOrDate);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    },
+    isSuccessDay(dateString) {
+      const dayStat = this.dailyStatsMap[dateString];
+      if (!dayStat) return false;
+      return dayStat.success > dayStat.fail;
+    },
+    isFailDay(dateString) {
+      const dayStat = this.dailyStatsMap[dateString];
+      if (!dayStat) return false;
+      return dayStat.fail > dayStat.success;
+    },
+    isNeutralDay(dateString) {
+      const dayStat = this.dailyStatsMap[dateString];
+      if (!dayStat) return false;
+      return dayStat.success === dayStat.fail || (dayStat.success === 0 && dayStat.fail === 0);
     }
   }
 };
@@ -1266,4 +1457,270 @@ export default {
     opacity: 1;
   }
 }
+
+/* Calendar styles */
+.calendar-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+
+  .section-title {
+    margin: 0;
+  }
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+
+  .nav-arrow {
+    font-size: 14px;
+    color: #475569;
+    cursor: pointer;
+    padding: 2px;
+    
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+
+  .current-month-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+    min-width: 70px;
+    text-align: center;
+  }
+}
+
+.calendar-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.calendar-week-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  
+  .week-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+  }
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendar-day-cell {
+  aspect-ratio: 1;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-height: 40px;
+
+  .day-number {
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  .day-record-count-badge {
+    font-size: 8px;
+    color: #94a3b8;
+    margin-top: 1px;
+  }
+
+  &.empty-cell {
+    background-color: transparent;
+    border-color: transparent;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  &.has-records {
+    border-style: solid;
+    font-weight: 600;
+  }
+
+  /* Success Day (green) */
+  &.success-day {
+    background-color: #dcfce7;
+    border-color: #86efac;
+    
+    .day-number { color: #166534; font-weight: 700; }
+    .day-record-count-badge { color: #166534; font-weight: 600; }
+  }
+
+  /* Fail Day (red) */
+  &.fail-day {
+    background-color: #ffe4e6;
+    border-color: #fca5a5;
+    
+    .day-number { color: #991b1b; font-weight: 700; }
+    .day-record-count-badge { color: #991b1b; font-weight: 600; }
+  }
+
+  /* Neutral Day (gray) */
+  &.neutral-day {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+    
+    .day-number { color: #334155; font-weight: 700; }
+    .day-record-count-badge { color: #475569; font-weight: 600; }
+  }
+
+  &:hover:not(.empty-cell) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  &.active-selected {
+    outline: 2.5px solid #7c3aed;
+    outline-offset: 1px;
+    transform: scale(1.04);
+    z-index: 2;
+  }
+}
+
+/* Selected Day details styles */
+.selected-day-details {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .details-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .close-details-btn {
+      font-size: 11px;
+      color: #ef4444;
+      cursor: pointer;
+      font-weight: 500;
+    }
+  }
+
+  .details-stats-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    
+    .stat-pill {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+
+      &.green { background-color: #dcfce7; color: #166534; }
+      &.orange { background-color: #ffe4e6; color: #991b1b; }
+      &.total { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+      &.rate { background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    }
+  }
+
+  .details-records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+
+  .detail-record-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #f1f5f9;
+
+    .rec-user-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+
+      .dot-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+
+        &.green { background-color: #22c55e; }
+        &.orange { background-color: #f97316; }
+        &.gray { background-color: #d1d5db; }
+      }
+
+      .user-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .rec-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+
+      .rec-time {
+        color: #64748b;
+      }
+
+      .rec-source {
+        font-size: 8px;
+        padding: 1px 4px;
+        border-radius: 4px;
+        font-weight: 500;
+        
+        &.active { background-color: #eff6ff; color: #1d4ed8; }
+        &.deleted { background-color: #f1f5f9; color: #475569; }
+      }
+    }
+  }
+
+  .details-records-empty {
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+    padding: 10px 0;
+  }
+}
 </style>
+
