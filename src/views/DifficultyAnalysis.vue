@@ -599,6 +599,48 @@
           </div>
         </div>
       </section>
+
+      <!-- 4. Data Rectification -->
+      <section class="rectification-section glass" id="card-rectification">
+        <div class="calendar-header-wrapper">
+          <h2 class="section-title">数据纠偏</h2>
+        </div>
+        <p class="section-subtitle">分析并找出可能由于拼写错误、空格多余、英文大小写或字词包含关系而导致重复的用户名。点击对应标签标签可实现一键合并更新。</p>
+        
+        <div class="rectification-content">
+          <div v-if="suggestedCorrectionGroups.length === 0" class="rectify-empty-state">
+            <van-icon name="passed" class="empty-icon" />
+            <span class="empty-text">未发现拼写相近的重复用户，数据质量良好！</span>
+          </div>
+          
+          <div v-else class="rectify-groups-list">
+            <div
+              v-for="(group, gIdx) in suggestedCorrectionGroups"
+              :key="gIdx"
+              class="rectify-group-card"
+            >
+              <div class="group-header">
+                <span class="match-badge">匹配组 #{{ gIdx + 1 }}</span>
+                <span class="similarity-text">相似度: {{ (group.similarity * 100).toFixed(0) }}%</span>
+              </div>
+              <div class="group-names">
+                <span
+                  v-for="user in group.users"
+                  :key="user.name"
+                  class="group-name-tag"
+                  @click="quickRectifyTo(user.name, group.users)"
+                  title="点击将本组内其他用户合并为此名称"
+                >
+                  <van-icon name="user-o" class="tag-user-icon" />
+                  <span class="tag-name-text">{{ user.name }}</span>
+                  <span class="tag-count-badge">{{ user.total }}次</span>
+                </span>
+              </div>
+              <p class="group-hint">💡 点击上方任意标签，可将本组其他用户名全部“一键合并”为该名称并重算。</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
     <!-- Beautiful Redesigned Edit Name Popup -->
     <van-popup
@@ -1047,6 +1089,45 @@ export default {
           return b.fail - a.fail;
         }).slice(0, 10);
       }
+    },
+    suggestedCorrectionGroups() {
+      const users = this.analyzedUsers.map(u => ({
+        name: u.name,
+        total: u.total
+      }));
+      
+      const groups = [];
+      const visited = new Set();
+      
+      for (let i = 0; i < users.length; i++) {
+        if (visited.has(users[i].name)) continue;
+        
+        const currentGroup = [users[i]];
+        let maxSimilarity = 0;
+        
+        for (let j = i + 1; j < users.length; j++) {
+          if (visited.has(users[j].name)) continue;
+          
+          const nameA = users[i].name;
+          const nameB = users[j].name;
+          
+          const sim = this.calculateNameSimilarity(nameA, nameB);
+          if (sim >= 0.6) {
+            currentGroup.push(users[j]);
+            maxSimilarity = Math.max(maxSimilarity, sim);
+          }
+        }
+        
+        if (currentGroup.length > 1) {
+          currentGroup.forEach(u => visited.add(u.name));
+          groups.push({
+            users: currentGroup,
+            similarity: maxSimilarity
+          });
+        }
+      }
+      
+      return groups;
     }
   },
   created() {
@@ -1313,6 +1394,107 @@ export default {
         console.error('保存修改名称失败:', e);
         this.$toast.fail('保存失败，请重试');
       }
+    },
+    calculateNameSimilarity(nameA, nameB) {
+      const a = nameA.trim().toLowerCase();
+      const b = nameB.trim().toLowerCase();
+      
+      if (a === b) return 1.0;
+      
+      if (a.includes(b) || b.includes(a)) {
+        const lenDiff = Math.abs(a.length - b.length);
+        if (lenDiff <= 3) {
+          return 0.85;
+        }
+      }
+      
+      const dist = this.getEditDistance(a, b);
+      const maxLen = Math.max(a.length, b.length);
+      if (maxLen === 0) return 0;
+      
+      return 1.0 - (dist / maxLen);
+    },
+    getEditDistance(a, b) {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+      }
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              Math.min(
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j] + 1
+              )
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    },
+    quickRectifyTo(targetName, groupUsers) {
+      const otherNames = groupUsers
+        .map(u => u.name)
+        .filter(name => name !== targetName);
+        
+      if (otherNames.length === 0) return;
+      
+      Dialog.confirm({
+        title: '一键合并数据',
+        message: `确定要将用户组内的：\n"${otherNames.join('", "')}"\n全部合并并重命名为 "${targetName}" 吗？\n\n此操作将合并更新他们的所有历史记录，并重新计算全部数据。`,
+        confirmButtonColor: '#7c3aed'
+      }).then(() => {
+        let totalUpdated = 0;
+        
+        // 1. Update in tableData
+        this.tableData.forEach(row => {
+          if (row.name && otherNames.includes(row.name.trim())) {
+            row.name = targetName;
+            totalUpdated++;
+          }
+        });
+        
+        // 2. Update in deletedData
+        this.deletedData.forEach(row => {
+          if (row.name && otherNames.includes(row.name.trim())) {
+            row.name = targetName;
+            totalUpdated++;
+          }
+        });
+        
+        // 3. Save to localStorage
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            parsed.tableData = this.tableData;
+            parsed.deletedData = this.deletedData;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+          }
+          
+          // 4. Update expanded users
+          this.expandedUsers = this.expandedUsers.map(name => {
+            if (otherNames.includes(name)) return targetName;
+            return name;
+          });
+          
+          // 5. Recalculate
+          this.runAnalysis();
+          this.$toast.success(`合并成功！共重命名合并 ${totalUpdated} 条记录`);
+        } catch (e) {
+          console.error('合并纠偏失败:', e);
+          this.$toast.fail('保存合并数据失败，请重试');
+        }
+      }).catch(() => {});
     },
     prevMonth() {
       if (this.currentMonth === 0) {
@@ -2840,6 +3022,146 @@ export default {
         box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
       }
     }
+  }
+}
+
+/* Data Rectification Section styling */
+.rectification-section {
+  margin-top: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  
+  .section-subtitle {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0 0 6px 0;
+    text-align: left;
+  }
+}
+
+.rectify-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  gap: 8px;
+  
+  .empty-icon {
+    font-size: 32px;
+    color: #10b981;
+  }
+  
+  .empty-text {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+  }
+}
+
+.rectify-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rectify-group-card {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
+  
+  .group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .match-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #7c3aed;
+      background-color: #f3e8ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    .similarity-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: #10b981;
+    }
+  }
+  
+  .group-names {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .group-name-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background-color: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    .tag-user-icon {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    .tag-name-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    .tag-count-badge {
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748b;
+      background-color: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    
+    &:hover {
+      border-color: #7c3aed;
+      background-color: #f5f3ff;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.1);
+      
+      .tag-user-icon {
+        color: #7c3aed;
+      }
+      
+      .tag-name-text {
+        color: #7c3aed;
+      }
+    }
+    
+    &:active {
+      transform: scale(0.97);
+    }
+  }
+  
+  .group-hint {
+    font-size: 10px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+    text-align: left;
   }
 }
 </style>
