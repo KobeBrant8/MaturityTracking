@@ -454,6 +454,9 @@
 
       <!-- 3. Search and User List -->
       <section class="user-list-section glass" id="card-users-list">
+        <div class="calendar-header-wrapper">
+          <h2 class="section-title">用户搜索</h2>
+        </div>
         <div class="list-controls">
           <div class="search-box">
             <van-icon name="search" class="search-icon" />
@@ -509,7 +512,7 @@
 
           <div v-else class="user-cards-list">
             <div
-              v-for="user in filteredUsers"
+              v-for="user in displayedUsers"
               :key="user.name"
               class="user-analysis-card"
               :class="user.difficulty"
@@ -596,6 +599,12 @@
                 </div>
               </div>
             </div>
+          </div>
+          <!-- Load More Button -->
+          <div v-if="filteredUsers.length > displayLimit" class="load-more-container">
+            <button class="load-more-btn" @click="displayLimit += 10">
+              加载更多 (余下 {{ filteredUsers.length - displayLimit }} 个)
+            </button>
           </div>
         </div>
       </section>
@@ -730,7 +739,8 @@ export default {
       editTargetOldName: '',
       editTargetNewName: '',
       leaderboardScope: 'all', // 'all' or 'month'
-      leaderboardMode: 'easy'  // 'easy' or 'hard'
+      leaderboardMode: 'easy',  // 'easy' or 'hard'
+      displayLimit: 10
     };
   },
   computed: {
@@ -835,6 +845,9 @@ export default {
         }
         return b.successRate - a.successRate;
       });
+    },
+    displayedUsers() {
+      return this.filteredUsers.slice(0, this.displayLimit);
     },
     calendarDays() {
       const year = this.currentYear;
@@ -1128,6 +1141,14 @@ export default {
       }
       
       return groups;
+    }
+  },
+  watch: {
+    searchQuery() {
+      this.displayLimit = 10;
+    },
+    currentDifficultyFilter() {
+      this.displayLimit = 10;
     }
   },
   created() {
