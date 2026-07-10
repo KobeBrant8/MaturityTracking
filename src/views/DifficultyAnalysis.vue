@@ -641,8 +641,13 @@
               class="rectify-group-card"
             >
               <div class="group-header">
-                <span class="match-badge">匹配组 #{{ ((currentRectifyPage - 1) * 5) + gIdx + 1 }}</span>
-                <span class="similarity-text">相似度: {{ (group.similarity * 100).toFixed(0) }}%</span>
+                <div class="header-left-info">
+                  <span class="match-badge">匹配组 #{{ ((currentRectifyPage - 1) * 5) + gIdx + 1 }}</span>
+                  <span class="similarity-text">相似度: {{ (group.similarity * 100).toFixed(0) }}%</span>
+                </div>
+                <div class="header-actions">
+                  <van-icon name="eye-close" class="ignore-btn" @click="ignoreGroup(group)" title="忽略此组" />
+                </div>
               </div>
               <div class="group-names">
                 <span
@@ -771,7 +776,8 @@ export default {
       leaderboardScope: 'all', // 'all' or 'month'
       leaderboardMode: 'easy',  // 'easy' or 'hard'
       currentPage: 1,
-      currentRectifyPage: 1
+      currentRectifyPage: 1,
+      ignoredGroups: []
     };
   },
   computed: {
@@ -1170,11 +1176,18 @@ export default {
         }
         
         if (currentGroup.length > 1) {
-          currentGroup.forEach(u => visited.add(u.name));
-          groups.push({
-            users: currentGroup,
-            similarity: maxSimilarity
-          });
+          const groupKey = currentGroup.map(u => u.name).sort().join('|');
+          if (!this.ignoredGroups.includes(groupKey)) {
+            currentGroup.forEach(u => visited.add(u.name));
+            groups.push({
+              users: currentGroup,
+              similarity: maxSimilarity,
+              id: groupKey
+            });
+          } else {
+            // If ignored, still mark as visited so we don't try to form another group with these names
+            currentGroup.forEach(u => visited.add(u.name));
+          }
         }
       }
       
@@ -1211,6 +1224,7 @@ export default {
           });
           this.deletedData = parsed.deletedData || [];
           this.stolenMap = parsed.stolenMap || {};
+          this.ignoredGroups = parsed.ignoredGroups || [];
         }
         this.runAnalysis();
       } catch (e) {
@@ -1434,13 +1448,7 @@ export default {
 
       // 3. Save to localStorage
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          parsed.tableData = this.tableData;
-          parsed.deletedData = this.deletedData;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-        }
+        this.saveDataToStorage();
         
         // 4. Update expanded state if expanded
         this.expandedUsers = this.expandedUsers.map(name => {
@@ -1503,6 +1511,38 @@ export default {
       }
       return matrix[b.length][a.length];
     },
+    saveDataToStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        let parsed = {};
+        if (saved) {
+          parsed = JSON.parse(saved);
+        }
+        parsed.tableData = this.tableData;
+        parsed.deletedData = this.deletedData;
+        parsed.stolenMap = this.stolenMap;
+        parsed.ignoredGroups = this.ignoredGroups;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      } catch (e) {
+        console.error('保存数据失败:', e);
+        throw e;
+      }
+    },
+    ignoreGroup(group) {
+      if (!group.id) return;
+      
+      Dialog.confirm({
+        title: '忽略此匹配组',
+        message: '确定要忽略这个匹配组吗？忽略后将不再提示此组的相似建议。',
+        confirmButtonColor: '#94a3b8'
+      }).then(() => {
+        if (!this.ignoredGroups.includes(group.id)) {
+          this.ignoredGroups.push(group.id);
+          this.saveDataToStorage();
+          this.$toast.success('已忽略该匹配组');
+        }
+      }).catch(() => {});
+    },
     quickRectifyTo(targetName, groupUsers) {
       const otherNames = groupUsers
         .map(u => u.name)
@@ -1535,13 +1575,7 @@ export default {
         
         // 3. Save to localStorage
         try {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            parsed.tableData = this.tableData;
-            parsed.deletedData = this.deletedData;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-          }
+          this.saveDataToStorage();
           
           // 4. Update expanded users
           this.expandedUsers = this.expandedUsers.map(name => {
@@ -3162,6 +3196,30 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    
+    .header-left-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ignore-btn {
+      font-size: 14px;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: #f1f5f9;
+        color: #64748b;
+      }
+
+      &:active {
+        transform: scale(0.9);
+      }
+    }
     
     .match-badge {
       font-size: 10px;
