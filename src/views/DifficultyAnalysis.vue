@@ -199,7 +199,7 @@
                 </div>
                 <div class="rec-meta">
                   <span class="rec-time">{{ rec.time || '未设置时间' }}</span>
-                  <span class="rec-source" :class="rec.source">{{ rec.source === 'active' ? '活跃' : '已删除' }}</span>
+                  <span class="rec-source" :class="rec.source">{{ rec.source === 'active' ? '监控中' : '已归档' }}</span>
                 </div>
               </div>
             </div>
