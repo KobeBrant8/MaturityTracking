@@ -1654,7 +1654,8 @@ export default {
 
       &.green { background-color: #dcfce7; color: #166534; }
       &.orange { background-color: #ffe4e6; color: #991b1b; }
-      &.total { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+      &.gray { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+      &.total { background-color: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
       &.rate { background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
     }
   }
