@@ -190,7 +190,7 @@
           <span class="picker-btn picker-confirm" @click="onTimeConfirm">确认</span>
         </div>
         <div class="picker-body">
-          <div class="name-input-section">
+          <div class="name-input-section" style="position: relative;">
             <label class="input-label">用户名</label>
             <input
               ref="popupNameInput"
@@ -199,7 +199,23 @@
               class="popup-name-input"
               placeholder="请输入用户名"
               @keydown.enter="focusNext('hour')"
+              @focus="showPopupSuggestions = true"
+              @blur="onPopupNameBlur"
             />
+            <!-- Suggestions List -->
+            <transition name="van-fade">
+              <div v-if="showPopupSuggestions && popupSuggestions.length > 0" class="suggestions-dropdown">
+                <div
+                  v-for="name in popupSuggestions"
+                  :key="name"
+                  class="suggestion-item"
+                  @mousedown="selectPopupSuggestion(name)"
+                >
+                  <van-icon name="user-o" class="suggestion-icon" />
+                  <span class="suggestion-text">{{ name }}</span>
+                </div>
+              </div>
+            </transition>
           </div>
           <div class="time-input-section">
             <label class="input-label">倒计时</label>
@@ -347,7 +363,8 @@ export default {
         { name: '覆盖导入 (覆盖本地全部数据，整库还原)', value: 'overwrite' },
         { name: '合并去重 (保留本地数据，比对去重新增)', value: 'merge' }
       ],
-      tempImportedData: null
+      tempImportedData: null,
+      showPopupSuggestions: false
     };
   },
   computed: {
@@ -395,6 +412,30 @@ export default {
       return this.tableData.filter(row => 
         row.name && row.name.toLowerCase().includes(keyword)
       );
+    },
+    uniqueNames() {
+      const names = new Set();
+      this.tableData.forEach(row => {
+        if (row.name && row.name.trim()) {
+          names.add(row.name.trim());
+        }
+      });
+      this.deletedData.forEach(row => {
+        if (row.name && row.name.trim()) {
+          names.add(row.name.trim());
+        }
+      });
+      return Array.from(names);
+    },
+    popupSuggestions() {
+      const val = this.editName ? this.editName.trim().toLowerCase() : '';
+      if (!val) {
+        // If empty, recommend top 5 most frequent names
+        return this.getFrequentNames().slice(0, 5);
+      }
+      return this.uniqueNames.filter(name => 
+        name.toLowerCase().includes(val) && name.toLowerCase() !== val
+      ).slice(0, 5);
     }
   },
   created() {
@@ -544,6 +585,34 @@ export default {
         this.$toast.fail('复制失败');
       }
       document.body.removeChild(textarea);
+    },
+
+    getFrequentNames() {
+      const counts = {};
+      this.tableData.forEach(row => {
+        if (row.name && row.name.trim()) {
+          const name = row.name.trim();
+          counts[name] = (counts[name] || 0) + 1;
+        }
+      });
+      this.deletedData.forEach(row => {
+        if (row.name && row.name.trim()) {
+          const name = row.name.trim();
+          counts[name] = (counts[name] || 0) + 1;
+        }
+      });
+      return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    },
+
+    onPopupNameBlur() {
+      setTimeout(() => {
+        this.showPopupSuggestions = false;
+      }, 200);
+    },
+
+    selectPopupSuggestion(name) {
+      this.editName = name;
+      this.showPopupSuggestions = false;
     },
 
     addRow() {
@@ -1685,6 +1754,58 @@ td {
 
 .name-input-section {
   margin-bottom: 24px;
+  position: relative;
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  z-index: 1000;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 6px;
+
+  .suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+    }
+
+    .suggestion-icon {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .suggestion-text {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    &:active, &:hover {
+      background-color: #eff6ff;
+      color: #3b82f6;
+
+      .suggestion-icon {
+        color: #3b82f6;
+      }
+    }
+  }
 }
 
 .input-label {
