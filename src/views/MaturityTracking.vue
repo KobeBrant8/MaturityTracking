@@ -42,6 +42,14 @@
 
     <div v-if="showMoreActions" class="more-backdrop" @click="showMoreActions = false"></div>
     <div v-if="showMoreActions" class="more-popover" @click.native.stop>
+      <div class="more-popover-item" @click="triggerImport">
+        <van-icon name="down" class="more-popover-icon" />
+        <span>导入数据</span>
+      </div>
+      <div class="more-popover-item" @click="handleExport">
+        <van-icon name="upgrade" class="more-popover-icon" />
+        <span>导出数据</span>
+      </div>
       <div class="more-popover-item" @click="handleClearAll">
         <van-icon name="delete" class="more-popover-icon" />
         <span>清除全部</span>
@@ -268,6 +276,15 @@
         <van-icon name="arrow-up" />
       </div>
     </transition>
+
+    <!-- Hidden File Input for Data Import -->
+    <input
+      ref="fileInput"
+      type="file"
+      accept=".json"
+      style="display: none"
+      @change="handleImportFile"
+    />
   </div>
 </template>
 
@@ -711,6 +728,106 @@ export default {
     handleDifficultyAnalysis() {
       this.showMoreActions = false;
       this.$router.push('/difficulty-analysis');
+    },
+
+    triggerImport() {
+      this.showMoreActions = false;
+      this.$refs.fileInput.click();
+    },
+
+    handleImportFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      event.target.value = '';
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          
+          if (!importedData || typeof importedData !== 'object') {
+            throw new Error('格式错误');
+          }
+          
+          const hasTable = Array.isArray(importedData.tableData);
+          const hasDeleted = Array.isArray(importedData.deletedData);
+          const hasStolen = typeof importedData.stolenMap === 'object';
+          
+          if (!hasTable && !hasDeleted && !hasStolen) {
+            throw new Error('未包含任何有效的数据格式');
+          }
+          
+          this.$dialog.confirm({
+            title: '确认导入',
+            message: '导入数据将覆盖当前的全部活跃数据、回收站和状态标记，是否确定？'
+          }).then(() => {
+            const dataToSave = {
+              tableData: importedData.tableData || [],
+              deletedData: importedData.deletedData || [],
+              stolenMap: importedData.stolenMap || {},
+              nextId: importedData.nextId || Math.max(1, ...(importedData.tableData || []).map(r => r.id || 0)) + 1,
+              memoName: importedData.memoName || '',
+              markedIds: importedData.markedIds || [],
+              notifiedIds: importedData.notifiedIds || []
+            };
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+            this.tableData = dataToSave.tableData;
+            this.deletedData = dataToSave.deletedData;
+            this.stolenMap = dataToSave.stolenMap;
+            this.nextId = dataToSave.nextId;
+            this.memoName = dataToSave.memoName;
+            this.markedIds = dataToSave.markedIds;
+            this.notifiedIds = dataToSave.notifiedIds;
+            
+            this.$toast.success('导入成功');
+          }).catch(() => {});
+          
+        } catch (err) {
+          console.error(err);
+          this.$dialog.alert({
+            title: '导入失败',
+            message: '请选择正确的 JSON 数据备份文件！'
+          });
+        }
+      };
+      reader.readAsText(file);
+    },
+
+    handleExport() {
+      this.showMoreActions = false;
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          this.$toast('暂无数据可导出');
+          return;
+        }
+        
+        const blob = new Blob([saved], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        
+        link.href = url;
+        link.setAttribute('download', `maturity_tracking_backup_${yyyy}${mm}${dd}_${hh}${min}${ss}.json`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        this.$toast.success('已导出 JSON 备份');
+      } catch (e) {
+        console.error('导出失败:', e);
+        this.$toast.fail('导出失败');
+      }
     },
 
     handleScroll() {
