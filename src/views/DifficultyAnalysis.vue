@@ -850,7 +850,14 @@ export default {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          this.tableData = parsed.tableData || [];
+          this.tableData = (parsed.tableData || []).map(row => {
+            if (row.deletedAt) {
+              const cleanRow = { ...row };
+              delete cleanRow.deletedAt;
+              return cleanRow;
+            }
+            return row;
+          });
           this.deletedData = parsed.deletedData || [];
           this.stolenMap = parsed.stolenMap || {};
         }
