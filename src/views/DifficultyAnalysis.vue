@@ -456,6 +456,9 @@
                       <span class="copy-badge" @click.stop="copyUserName(user.name)">
                         <van-icon name="copy-o" /> 复制
                       </span>
+                      <span class="edit-badge" @click.stop="showEditNameDialog(user.name)">
+                        <van-icon name="edit" /> 修改
+                      </span>
                     </div>
                     <div class="user-record-summary-text">
                       记录 {{ user.total }} 次 (成功 {{ user.success }} / 失败 {{ user.fail }})
@@ -527,11 +530,28 @@
         </div>
       </section>
     </div>
+    <!-- Name Editing Dialog -->
+    <van-dialog
+      v-model="showEditDialog"
+      title="修改名称"
+      show-cancel-button
+      :before-close="beforeEditDialogClose"
+    >
+      <div style="padding: 16px;">
+        <van-field
+          v-model="editTargetNewName"
+          label="新名称"
+          placeholder="请输入新的用户名称"
+          ref="editField"
+          :border="true"
+        />
+      </div>
+    </van-dialog>
   </div>
 </template>
 
 <script>
-import { Icon, Empty, Toast } from 'vant';
+import { Icon, Empty, Toast, Dialog, Field } from 'vant';
 
 const STORAGE_KEY = 'maturity_tracking_data';
 
@@ -540,7 +560,9 @@ export default {
   components: {
     [Icon.name]: Icon,
     [Empty.name]: Empty,
-    [Toast.name]: Toast
+    [Toast.name]: Toast,
+    [Dialog.Component.name]: Dialog.Component,
+    [Field.name]: Field
   },
   data() {
     return {
@@ -565,7 +587,10 @@ export default {
         y: 0,
         date: '',
         valueText: ''
-      }
+      },
+      showEditDialog: false,
+      editTargetOldName: '',
+      editTargetNewName: ''
     };
   },
   computed: {
@@ -1036,6 +1061,74 @@ export default {
         this.$toast.fail('复制失败');
       }
       document.body.removeChild(textarea);
+    },
+    showEditNameDialog(oldName) {
+      this.editTargetOldName = oldName;
+      this.editTargetNewName = oldName;
+      this.showEditDialog = true;
+    },
+    beforeEditDialogClose(action, done) {
+      if (action === 'cancel') {
+        done();
+        return;
+      }
+      
+      const newName = this.editTargetNewName ? this.editTargetNewName.trim() : '';
+      if (!newName) {
+        this.$toast.fail('名称不能为空');
+        done(false);
+        return;
+      }
+
+      if (newName === this.editTargetOldName.trim()) {
+        done();
+        return;
+      }
+
+      const oldName = this.editTargetOldName.trim();
+      let updatedCount = 0;
+
+      // 1. Update tableData in local state
+      this.tableData.forEach(row => {
+        if (row.name && row.name.trim() === oldName) {
+          row.name = newName;
+          updatedCount++;
+        }
+      });
+
+      // 2. Update deletedData in local state
+      this.deletedData.forEach(row => {
+        if (row.name && row.name.trim() === oldName) {
+          row.name = newName;
+          updatedCount++;
+        }
+      });
+
+      // 3. Save to localStorage
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          parsed.tableData = this.tableData;
+          parsed.deletedData = this.deletedData;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        }
+        
+        // 4. Update expanded state if expanded
+        this.expandedUsers = this.expandedUsers.map(name => {
+          if (name === oldName) return newName;
+          return name;
+        });
+
+        // 5. Recalculate analysis data
+        this.runAnalysis();
+        this.$toast.success(`修改成功，共更新 ${updatedCount} 条记录`);
+        done();
+      } catch (e) {
+        console.error('保存修改名称失败:', e);
+        this.$toast.fail('保存失败，请重试');
+        done(false);
+      }
     },
     prevMonth() {
       if (this.currentMonth === 0) {
@@ -1657,6 +1750,24 @@ export default {
 
       &:active {
         background-color: #e2e8f0;
+      }
+    }
+
+    .edit-badge {
+      font-size: 9px;
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      border: 1px solid #bfdbfe;
+
+      &:active {
+        background-color: #dbeafe;
       }
     }
   }
