@@ -600,10 +600,12 @@
               </div>
             </div>
           </div>
-          <!-- Load More Button -->
+          <!-- Redesigned Load More Button -->
           <div v-if="filteredUsers.length > displayLimit" class="load-more-container">
             <button class="load-more-btn" @click="displayLimit += 10">
-              加载更多 (余下 {{ filteredUsers.length - displayLimit }} 个)
+              <span>展开更多用户</span>
+              <span class="remaining-badge">余下 {{ filteredUsers.length - displayLimit }}</span>
+              <van-icon name="arrow-down" class="btn-arrow-icon" />
             </button>
           </div>
         </div>
@@ -3183,6 +3185,69 @@ export default {
     margin: 0;
     line-height: 1.4;
     text-align: left;
+  }
+}
+
+/* Load More styling */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 8px;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(245, 243, 255, 0.7);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(221, 214, 254, 0.8);
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+
+  .remaining-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    padding: 2px 8px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+  }
+
+  .btn-arrow-icon {
+    font-size: 12px;
+    color: #7c3aed;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    color: #ffffff;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    border-color: #7c3aed;
+    box-shadow: 0 6px 16px rgba(124, 58, 237, 0.3);
+    
+    .remaining-badge {
+      background: #ffffff;
+      color: #7c3aed;
+      box-shadow: none;
+    }
+    
+    .btn-arrow-icon {
+      color: #ffffff;
+      transform: translateY(2px);
+    }
+  }
+
+  &:active {
+    transform: scale(0.96);
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
   }
 }
 </style>
