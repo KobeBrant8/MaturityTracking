@@ -380,6 +380,76 @@
             </div>
           </div>
         </div>
+
+        <!-- Leaderboard: Top 10 Stealing Leaderboard -->
+        <div class="leaderboard-card glass" id="card-leaderboard">
+          <div class="calendar-header-wrapper">
+            <h2 class="section-title">偷菜难易度排行榜 (Top 10)</h2>
+            <div class="calendar-nav">
+              <span class="leaderboard-scope-btn" :class="{ active: leaderboardScope === 'all' }" @click="leaderboardScope = 'all'">全部</span>
+              <span class="leaderboard-scope-btn" :class="{ active: leaderboardScope === 'month' }" @click="leaderboardScope = 'month'">
+                {{ currentYear }}年{{ String(currentMonth + 1).padStart(2, '0') }}月
+              </span>
+            </div>
+          </div>
+
+          <div class="leaderboard-modes">
+            <span
+              class="leaderboard-mode-btn easy"
+              :class="{ active: leaderboardMode === 'easy' }"
+              @click="leaderboardMode = 'easy'"
+            >
+              <van-icon name="smile-o" /> 最容易偷
+            </span>
+            <span
+              class="leaderboard-mode-btn hard"
+              :class="{ active: leaderboardMode === 'hard' }"
+              @click="leaderboardMode = 'hard'"
+            >
+              <van-icon name="warn-o" /> 最难偷
+            </span>
+          </div>
+
+          <div class="leaderboard-list">
+            <div v-if="topTenLeaderboard.length === 0" class="leaderboard-empty">
+              暂无匹配的排行榜数据 (需有成功/失败状态标记)
+            </div>
+            <div
+              v-else
+              v-for="(item, index) in topTenLeaderboard"
+              :key="item.name"
+              class="leaderboard-item"
+              :class="'rank-' + (index + 1)"
+            >
+              <div class="rank-number-box">
+                <span v-if="index === 0" class="medal gold">🥇</span>
+                <span v-else-if="index === 1" class="medal silver">🥈</span>
+                <span v-else-if="index === 2" class="medal bronze">🥉</span>
+                <span v-else class="rank-num">{{ index + 1 }}</span>
+              </div>
+              <div class="leaderboard-user-info">
+                <div class="leaderboard-user-row">
+                  <span class="user-name">{{ item.name }}</span>
+                  <span class="attempts-count">尝试 {{ item.success + item.fail }} 次</span>
+                </div>
+                <div class="leaderboard-progress-wrapper">
+                  <div class="progress-bar-bg">
+                    <div
+                      class="progress-bar-fill"
+                      :style="{
+                        width: item.successRate + '%',
+                        background: leaderboardMode === 'easy' ? 'linear-gradient(90deg, #34d399, #10b981)' : 'linear-gradient(90deg, #f87171, #f43f5e)'
+                      }"
+                    ></div>
+                  </div>
+                  <span class="rate-value" :style="{ color: leaderboardMode === 'easy' ? '#10b981' : '#f43f5e' }">
+                    {{ item.successRate.toFixed(1) }}% {{ leaderboardMode === 'easy' ? '成功率' : '成功率' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 3. Search and User List -->
@@ -590,7 +660,9 @@ export default {
       },
       showEditDialog: false,
       editTargetOldName: '',
-      editTargetNewName: ''
+      editTargetNewName: '',
+      leaderboardScope: 'all', // 'all' or 'month'
+      leaderboardMode: 'easy'  // 'easy' or 'hard'
     };
   },
   computed: {
@@ -864,6 +936,91 @@ export default {
       const last = this.chartPoints[this.chartPoints.length - 1];
       const linePart = this.chartPoints.map(pt => `L ${pt.x} ${pt.y}`).join(' ');
       return `M ${first.x} 190 ${linePart} L ${last.x} 190 Z`;
+    },
+    topTenLeaderboard() {
+      const scope = this.leaderboardScope;
+      const year = this.currentYear;
+      const month = this.currentMonth;
+      
+      const userMap = {};
+
+      const process = (row, status, dateStr) => {
+        if (!row.name) return;
+        const cleanName = row.name.trim();
+        if (!cleanName) return;
+
+        // Apply Month Filter if selected
+        if (scope === 'month' && dateStr) {
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime()) || d.getFullYear() !== year || d.getMonth() !== month) {
+            return;
+          }
+        }
+
+        if (!userMap[cleanName]) {
+          userMap[cleanName] = {
+            name: cleanName,
+            success: 0,
+            fail: 0,
+            unmarked: 0
+          };
+        }
+
+        const user = userMap[cleanName];
+        if (status === 'green') {
+          user.success++;
+        } else if (status === 'orange') {
+          user.fail++;
+        } else {
+          user.unmarked++;
+        }
+      };
+
+      // 1. Process active records (assume today's date context)
+      const todayStr = this.getLocalDateString(new Date());
+      this.tableData.forEach(row => {
+        const status = this.stolenMap[row.id] || '';
+        process(row, status, todayStr);
+      });
+
+      // 2. Process deleted records (using their deletedAt date context)
+      this.deletedData.forEach(row => {
+        const status = row.stolenStatus || this.stolenMap[row.id] || '';
+        const dateStr = row.deletedAt ? this.getLocalDateString(row.deletedAt) : '';
+        process(row, status, dateStr);
+      });
+
+      // 3. Map records to rates and filter zero attempt rows
+      const list = Object.values(userMap)
+        .map(u => {
+          const attempts = u.success + u.fail;
+          const successRate = attempts > 0 ? (u.success / attempts) * 100 : 0;
+          return {
+            ...u,
+            attempts,
+            successRate
+          };
+        })
+        .filter(u => u.attempts > 0);
+
+      // 4. Sort and return top 10
+      if (this.leaderboardMode === 'easy') {
+        // Most Easy to steal (High success rate desc, then high success count desc)
+        return list.sort((a, b) => {
+          if (b.successRate !== a.successRate) {
+            return b.successRate - a.successRate;
+          }
+          return b.success - a.success;
+        }).slice(0, 10);
+      } else {
+        // Hardest to steal (Low success rate asc, then high fail count desc)
+        return list.sort((a, b) => {
+          if (a.successRate !== b.successRate) {
+            return a.successRate - b.successRate;
+          }
+          return b.fail - a.fail;
+        }).slice(0, 10);
+      }
     }
   },
   created() {
@@ -2292,6 +2449,209 @@ export default {
   color: #94a3b8;
   font-weight: 500;
   pointer-events: none;
+}
+
+/* Leaderboard Card styling */
+.leaderboard-card {
+  margin-top: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.leaderboard-scope-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background-color: rgba(241, 245, 249, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &.active {
+    color: #ffffff;
+    background-color: #7c3aed;
+    border-color: #7c3aed;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
+  }
+}
+
+.leaderboard-modes {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.leaderboard-mode-btn {
+  flex: 1;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+
+  &.easy {
+    color: #047857;
+    background-color: #ecfdf5;
+    border: 1.5px solid #a7f3d0;
+
+    &.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      border-color: #10b981;
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+    }
+  }
+
+  &.hard {
+    color: #b91c1c;
+    background-color: #fef2f2;
+    border: 1.5px solid #fca5a5;
+
+    &.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #f87171 0%, #f43f5e 100%);
+      border-color: #f43f5e;
+      box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2);
+    }
+  }
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-empty {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  padding: 30px 0;
+  font-weight: 500;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(241, 245, 249, 0.8);
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    background-color: #ffffff;
+  }
+
+  /* Rank special highlights */
+  &.rank-1 {
+    background-color: rgba(254, 243, 199, 0.4);
+    border-color: rgba(252, 211, 77, 0.5);
+  }
+  &.rank-2 {
+    background-color: rgba(241, 245, 249, 0.4);
+    border-color: rgba(203, 213, 225, 0.5);
+  }
+  &.rank-3 {
+    background-color: rgba(255, 237, 213, 0.4);
+    border-color: rgba(253, 186, 116, 0.5);
+  }
+}
+
+.rank-number-box {
+  width: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+
+  .medal {
+    font-size: 18px;
+  }
+
+  .rank-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    background-color: #f1f5f9;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.leaderboard-user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.leaderboard-user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .user-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .attempts-count {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 500;
+  }
+}
+
+.leaderboard-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .progress-bar-bg {
+    flex: 1;
+    height: 6px;
+    background-color: #f1f5f9;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .rate-value {
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 80px;
+    text-align: right;
+  }
 }
 </style>
 
