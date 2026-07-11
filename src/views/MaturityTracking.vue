@@ -28,6 +28,10 @@
             <van-icon name="bar-chart-o" class="action-icon analysis-icon" />
             <span class="action-text">分析</span>
           </div>
+          <div class="action-btn" @click="takeScreenshot">
+            <van-icon name="photo-o" class="action-icon screenshot-icon" />
+            <span class="action-text">截图</span>
+          </div>
           <div class="action-btn" @click="clearExpired">
             <van-icon name="delete-o" class="action-icon clear-expired-icon" />
             <span class="action-text">清除过期</span>
@@ -61,7 +65,7 @@
       </div>
     </div>
 
-    <div class="table-wrapper">
+    <div ref="tableWrapper" class="table-wrapper">
       <van-empty v-if="tableData.length === 0" description="暂无数据，请点击新增" />
 
       <table v-else class="data-table">
@@ -317,6 +321,7 @@
 
 <script>
 import { Button, Field, Popup, Empty, Icon, Dialog, Toast, ActionSheet } from 'vant';
+import html2canvas from 'html2canvas';
 
 const STORAGE_KEY = 'maturity_tracking_data';
 
@@ -1226,6 +1231,56 @@ export default {
         this.$set(this.stolenMap, this.reminderRowId, color);
       }
       this.showReminder = false;
+    },
+
+    async takeScreenshot() {
+      const wrapper = this.$refs.tableWrapper;
+      if (!wrapper) {
+        this.$toast('没有可截图的数据');
+        return;
+      }
+
+      // Collect expired elements to hide
+      const expiredElements = wrapper.querySelectorAll('.expired-row, .expired-divider-row');
+      const hiddenElements = [];
+      expiredElements.forEach(el => {
+        if (el.style.display !== 'none') {
+          el.style.display = 'none';
+          hiddenElements.push(el);
+        }
+      });
+
+      try {
+        this.$toast.loading({ message: '截图中...', duration: 0, forbidClick: true });
+        const canvas = await html2canvas(wrapper, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true
+        });
+        this.$toast.clear();
+
+        // Generate filename with current date-time
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const filename = `成熟度_${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+
+        // Trigger download
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        this.$toast.success('截图已保存');
+      } catch (err) {
+        this.$toast.clear();
+        this.$toast('截图失败，请重试');
+        console.error('Screenshot error:', err);
+      } finally {
+        // Restore hidden elements
+        hiddenElements.forEach(el => {
+          el.style.display = '';
+        });
+      }
     }
   }
 };
@@ -1338,6 +1393,14 @@ export default {
 
     & + .action-text {
       color: #10b981;
+    }
+  }
+
+  .screenshot-icon {
+    color: #3b82f6;
+
+    & + .action-text {
+      color: #3b82f6;
     }
   }
 }
