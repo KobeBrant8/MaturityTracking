@@ -198,18 +198,20 @@
               type="text"
               class="popup-name-input"
               placeholder="请输入用户名"
-              @keydown.enter="focusNext('hour')"
-              @focus="showPopupSuggestions = true"
+              @keydown="handlePopupNameKeydown"
+              @focus="handlePopupNameFocus"
               @blur="onPopupNameBlur"
             />
             <!-- Suggestions List -->
             <transition name="van-fade">
               <div v-if="showPopupSuggestions && popupSuggestions.length > 0" class="suggestions-dropdown">
                 <div
-                  v-for="name in popupSuggestions"
+                  v-for="(name, index) in popupSuggestions"
                   :key="name"
                   class="suggestion-item"
+                  :class="{ 'suggestion-item-active': index === highlightedSuggestionIndex }"
                   @mousedown="selectPopupSuggestion(name)"
+                  @mouseenter="highlightedSuggestionIndex = index"
                 >
                   <van-icon name="user-o" class="suggestion-icon" />
                   <span class="suggestion-text">{{ name }}</span>
@@ -364,7 +366,8 @@ export default {
         { name: '合并去重 (保留本地数据，比对去重新增)', value: 'merge' }
       ],
       tempImportedData: null,
-      showPopupSuggestions: false
+      showPopupSuggestions: false,
+      highlightedSuggestionIndex: -1
     };
   },
   computed: {
@@ -590,12 +593,63 @@ export default {
     onPopupNameBlur() {
       setTimeout(() => {
         this.showPopupSuggestions = false;
+        this.highlightedSuggestionIndex = -1;
       }, 200);
+    },
+
+    handlePopupNameFocus() {
+      this.showPopupSuggestions = true;
+      this.highlightedSuggestionIndex = -1;
+    },
+
+    handlePopupNameKeydown(event) {
+      const keyCode = event.keyCode || event.which;
+      
+      // 向上键 (38)
+      if (keyCode === 38) {
+        event.preventDefault();
+        if (this.popupSuggestions.length > 0) {
+          if (this.highlightedSuggestionIndex <= 0) {
+            this.highlightedSuggestionIndex = this.popupSuggestions.length - 1;
+          } else {
+            this.highlightedSuggestionIndex--;
+          }
+        }
+      }
+      // 向下键 (40)
+      else if (keyCode === 40) {
+        event.preventDefault();
+        if (this.popupSuggestions.length > 0) {
+          if (this.highlightedSuggestionIndex === -1 || this.highlightedSuggestionIndex >= this.popupSuggestions.length - 1) {
+            this.highlightedSuggestionIndex = 0;
+          } else {
+            this.highlightedSuggestionIndex++;
+          }
+        }
+      }
+      // 回车键 (13)
+      else if (keyCode === 13) {
+        if (this.highlightedSuggestionIndex !== -1 && this.popupSuggestions[this.highlightedSuggestionIndex]) {
+          event.preventDefault();
+          this.selectPopupSuggestion(this.popupSuggestions[this.highlightedSuggestionIndex]);
+          return;
+        }
+        this.focusNext('hour');
+      }
+      // ESC键 (27)
+      else if (keyCode === 27) {
+        this.showPopupSuggestions = false;
+        this.highlightedSuggestionIndex = -1;
+      }
     },
 
     selectPopupSuggestion(name) {
       this.editName = name;
       this.showPopupSuggestions = false;
+      this.highlightedSuggestionIndex = -1;
+      this.$nextTick(() => {
+        this.focusNext('hour');
+      });
     },
 
     addRow() {
@@ -1781,6 +1835,15 @@ td {
     }
 
     &:active, &:hover {
+      background-color: #eff6ff;
+      color: #3b82f6;
+
+      .suggestion-icon {
+        color: #3b82f6;
+      }
+    }
+
+    &.suggestion-item-active {
       background-color: #eff6ff;
       color: #3b82f6;
 
