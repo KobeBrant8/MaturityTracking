@@ -603,12 +603,14 @@ export default {
     },
 
     handlePopupNameKeydown(event) {
+      const key = event.key || event.keyIdentifier;
       const keyCode = event.keyCode || event.which;
+      const hasSuggestions = this.showPopupSuggestions && this.popupSuggestions.length > 0;
       
-      // 向上键 (38)
-      if (keyCode === 38) {
+      // 向上键
+      if (key === 'ArrowUp' || keyCode === 38) {
         event.preventDefault();
-        if (this.popupSuggestions.length > 0) {
+        if (hasSuggestions) {
           if (this.highlightedSuggestionIndex <= 0) {
             this.highlightedSuggestionIndex = this.popupSuggestions.length - 1;
           } else {
@@ -616,10 +618,10 @@ export default {
           }
         }
       }
-      // 向下键 (40)
-      else if (keyCode === 40) {
+      // 向下键
+      else if (key === 'ArrowDown' || keyCode === 40) {
         event.preventDefault();
-        if (this.popupSuggestions.length > 0) {
+        if (hasSuggestions) {
           if (this.highlightedSuggestionIndex === -1 || this.highlightedSuggestionIndex >= this.popupSuggestions.length - 1) {
             this.highlightedSuggestionIndex = 0;
           } else {
@@ -627,18 +629,22 @@ export default {
           }
         }
       }
-      // 回车键 (13)
-      else if (keyCode === 13) {
-        if (this.highlightedSuggestionIndex !== -1 && this.popupSuggestions[this.highlightedSuggestionIndex]) {
+      // 回车键
+      else if (key === 'Enter' || keyCode === 13) {
+        if (hasSuggestions && this.highlightedSuggestionIndex !== -1 && this.popupSuggestions[this.highlightedSuggestionIndex]) {
           event.preventDefault();
           this.selectPopupSuggestion(this.popupSuggestions[this.highlightedSuggestionIndex]);
           return;
         }
         this.focusNext('hour');
       }
-      // ESC键 (27)
-      else if (keyCode === 27) {
+      // ESC键
+      else if (key === 'Escape' || keyCode === 27) {
         this.showPopupSuggestions = false;
+        this.highlightedSuggestionIndex = -1;
+      }
+      // 任何其他键时，重置高亮索引
+      else if (hasSuggestions) {
         this.highlightedSuggestionIndex = -1;
       }
     },
