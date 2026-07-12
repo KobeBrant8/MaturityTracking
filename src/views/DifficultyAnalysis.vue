@@ -2544,10 +2544,14 @@ export default {
   }
 
   &.active-selected {
-    outline: 2.5px solid #7c3aed;
-    outline-offset: 1px;
-    transform: scale(1.04);
+    box-shadow: 0 0 0 2.5px #7c3aed, 0 0 0 4.5px rgba(124, 58, 237, 0.2);
+    border-color: #7c3aed;
+    transform: scale(1.06);
     z-index: 2;
+    background-color: #ede9fe;
+
+    .day-number { color: #6d28d9; font-weight: 700; }
+    .day-record-count-badge { color: #7c3aed; font-weight: 700; }
   }
 }
 
