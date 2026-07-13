@@ -2631,22 +2631,92 @@ export default {
     }
   }
 
-  .details-stats-summary {
+  .details-stats-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
     
-    .stat-pill {
-      font-size: 9px;
-      padding: 2px 6px;
-      border-radius: 4px;
+    .stat-tab-pill {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 6px;
       font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+      border: 1.5px solid transparent;
 
-      &.green { background-color: #dcfce7; color: #166534; }
-      &.orange { background-color: #ffe4e6; color: #991b1b; }
-      &.gray { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-      &.total { background-color: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
-      &.rate { background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+      &.all {
+        background-color: #f1f5f9;
+        color: #475569;
+        border-color: #cbd5e1;
+
+        &.active {
+          background-color: #475569;
+          color: #ffffff;
+          border-color: #334155;
+          box-shadow: 0 2px 4px rgba(71, 85, 105, 0.2);
+        }
+      }
+
+      &.green {
+        background-color: #dcfce7;
+        color: #166534;
+        border-color: #bbf7d0;
+
+        &.active {
+          background-color: #166534;
+          color: #ffffff;
+          border-color: #14532d;
+          box-shadow: 0 2px 4px rgba(22, 101, 52, 0.25);
+        }
+      }
+
+      &.orange {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border-color: #fecaca;
+
+        &.active {
+          background-color: #ef4444;
+          color: #ffffff;
+          border-color: #b91c1c;
+          box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+        }
+      }
+
+      &.gray {
+        background-color: #f8fafc;
+        color: #64748b;
+        border-color: #e2e8f0;
+
+        &.active {
+          background-color: #64748b;
+          color: #ffffff;
+          border-color: #475569;
+          box-shadow: 0 2px 4px rgba(100, 116, 139, 0.25);
+        }
+      }
+      
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+
+    .stat-pill {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      
+      &.rate {
+        background-color: #f5f3ff;
+        color: #6d28d9;
+        border: 1.5px solid #ddd6fe;
+        margin-left: auto;
+      }
     }
   }
 
