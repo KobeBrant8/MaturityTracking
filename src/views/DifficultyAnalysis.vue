@@ -179,33 +179,60 @@
               <span class="close-details-btn" @click="selectedDate = null">收起</span>
             </div>
             
-            <div v-if="dailyStatsMap[selectedDate]" class="details-stats-summary">
-              <span class="stat-pill green">成功: {{ dailyStatsMap[selectedDate].success }}次</span>
-              <span class="stat-pill orange">失败: {{ dailyStatsMap[selectedDate].fail }}次</span>
-              <span class="stat-pill gray">不明: {{ dailyStatsMap[selectedDate].unmarked }}次</span>
-              <span class="stat-pill total">共: {{ dailyStatsMap[selectedDate].total }}条</span>
+            <div v-if="dailyStatsMap[selectedDate]" class="details-stats-tabs">
+              <span
+                class="stat-tab-pill all"
+                :class="{ active: currentCalendarFilter === 'all' }"
+                @click="currentCalendarFilter = 'all'"
+              >
+                全部 {{ dailyStatsMap[selectedDate].total }}
+              </span>
+              <span
+                class="stat-tab-pill green"
+                :class="{ active: currentCalendarFilter === 'success' }"
+                @click="currentCalendarFilter = 'success'"
+              >
+                成功 {{ dailyStatsMap[selectedDate].success }}
+              </span>
+              <span
+                class="stat-tab-pill orange"
+                :class="{ active: currentCalendarFilter === 'fail' }"
+                @click="currentCalendarFilter = 'fail'"
+              >
+                失败 {{ dailyStatsMap[selectedDate].fail }}
+              </span>
+              <span
+                class="stat-tab-pill gray"
+                :class="{ active: currentCalendarFilter === 'unmarked' }"
+                @click="currentCalendarFilter = 'unmarked'"
+              >
+                不明 {{ dailyStatsMap[selectedDate].unmarked }}
+              </span>
               <span class="stat-pill rate" v-if="dailyStatsMap[selectedDate].success + dailyStatsMap[selectedDate].fail > 0">
                 成功率: {{ (dailyStatsMap[selectedDate].success / (dailyStatsMap[selectedDate].success + dailyStatsMap[selectedDate].fail) * 100).toFixed(0) }}%
               </span>
             </div>
             
             <div v-if="dailyStatsMap[selectedDate]" class="details-records-list">
-              <div
-                v-for="(rec, idx) in dailyStatsMap[selectedDate].records"
-                :key="idx"
-                class="detail-record-row"
-              >
-                <div class="rec-user-info">
-                  <span class="dot-status" :class="rec.status || 'gray'"></span>
-                  <span class="user-name">{{ rec.name }}</span>
+              <template v-if="filteredCalendarRecords.length > 0">
+                <div
+                  v-for="(rec, idx) in filteredCalendarRecords"
+                  :key="idx"
+                  class="detail-record-row"
+                >
+                  <div class="rec-user-info">
+                    <span class="dot-status" :class="rec.status || 'gray'"></span>
+                    <span class="user-name">{{ rec.name }}</span>
+                  </div>
+                  <div class="rec-meta">
+                    <span class="rec-time">{{ rec.time || '未设置时间' }}</span>
+                    <span class="rec-source" :class="rec.source">{{ rec.source === 'active' ? '监控中' : '已归档' }}</span>
+                  </div>
                 </div>
-                <div class="rec-meta">
-                  <span class="rec-time">{{ rec.time || '未设置时间' }}</span>
-                  <span class="rec-source" :class="rec.source">{{ rec.source === 'active' ? '监控中' : '已归档' }}</span>
-                </div>
-              </div>
+              </template>
+              <div v-else class="details-records-empty">暂无此类记录</div>
             </div>
-             <div v-else class="details-records-empty">该日无记录</div>
+            <div v-else class="details-records-empty">该日无记录</div>
           </div>
         </div>
 
@@ -646,7 +673,10 @@
                   <span class="similarity-text">相似度: {{ (group.similarity * 100).toFixed(0) }}%</span>
                 </div>
                 <div class="header-actions">
-                  <van-icon name="closed-eye" class="ignore-btn" @click="ignoreGroup(group)" title="忽略此组" />
+                  <span class="ignore-action-btn" @click="ignoreGroup(group)" title="忽略此组">
+                    <van-icon name="closed-eye" class="action-icon" />
+                    <span>忽略</span>
+                  </span>
                 </div>
               </div>
               <div class="group-names">
@@ -777,7 +807,8 @@ export default {
       leaderboardMode: 'easy',  // 'easy' or 'hard'
       currentPage: 1,
       currentRectifyPage: 1,
-      ignoredGroups: []
+      ignoredGroups: [],
+      currentCalendarFilter: 'all'
     };
   },
   computed: {
@@ -892,6 +923,20 @@ export default {
       const start = (this.currentRectifyPage - 1) * 5;
       const end = start + 5;
       return this.suggestedCorrectionGroups.slice(start, end);
+    },
+    filteredCalendarRecords() {
+      if (!this.selectedDate || !this.dailyStatsMap[this.selectedDate]) return [];
+      const records = this.dailyStatsMap[this.selectedDate].records || [];
+      if (this.currentCalendarFilter === 'success') {
+        return records.filter(r => r.status === 'green');
+      }
+      if (this.currentCalendarFilter === 'fail') {
+        return records.filter(r => r.status === 'orange');
+      }
+      if (this.currentCalendarFilter === 'unmarked') {
+        return records.filter(r => r.status !== 'green' && r.status !== 'orange');
+      }
+      return records;
     },
     calendarDays() {
       const year = this.currentYear;
@@ -1613,6 +1658,7 @@ export default {
     selectCalendarDate(dateString) {
       if (!dateString) return;
       this.selectedDate = this.selectedDate === dateString ? null : dateString;
+      this.currentCalendarFilter = 'all';
     },
     getLocalDateString(isoStringOrDate) {
       const d = new Date(isoStringOrDate);
@@ -3210,21 +3256,37 @@ export default {
       gap: 8px;
     }
 
-    .ignore-btn {
-      font-size: 14px;
-      color: #94a3b8;
+    .ignore-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
-      padding: 4px;
-      border-radius: 4px;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
 
-      &:hover {
-        background-color: #f1f5f9;
+      .action-icon {
+        font-size: 11px;
         color: #64748b;
       }
 
+      &:hover {
+        background-color: #fee2e2;
+        border-color: #fca5a5;
+        color: #ef4444;
+
+        .action-icon {
+          color: #ef4444;
+        }
+      }
+
       &:active {
-        transform: scale(0.9);
+        transform: scale(0.96);
       }
     }
     
