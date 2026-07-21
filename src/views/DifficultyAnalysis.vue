@@ -410,10 +410,10 @@
           </div>
         </div>
 
-        <!-- Leaderboard: Top 10 Stealing Leaderboard -->
+        <!-- Leaderboard: Top 20 Stealing Leaderboard -->
         <div class="leaderboard-card glass" id="card-leaderboard">
           <div class="calendar-header-wrapper">
-            <h2 class="section-title">红黑Top10</h2>
+            <h2 class="section-title">红黑TOP20</h2>
             <div class="calendar-nav">
               <span class="leaderboard-scope-btn" :class="{ active: leaderboardScope === 'all' }" @click="leaderboardScope = 'all'">全部</span>
               <span class="leaderboard-scope-btn" :class="{ active: leaderboardScope === 'month' }" @click="leaderboardScope = 'month'">
@@ -440,21 +440,21 @@
           </div>
 
           <div class="leaderboard-list">
-            <div v-if="topTenLeaderboard.length === 0" class="leaderboard-empty">
+            <div v-if="topTwentyLeaderboard.length === 0" class="leaderboard-empty">
               暂无匹配的排行榜数据 (需有成功/失败状态标记)
             </div>
             <div
               v-else
-              v-for="(item, index) in topTenLeaderboard"
+              v-for="(item, index) in displayedLeaderboard"
               :key="item.name"
               class="leaderboard-item"
-              :class="'rank-' + (index + 1)"
+              :class="'rank-' + (((leaderboardPage - 1) * 10) + index + 1)"
             >
               <div class="rank-number-box">
-                <span v-if="index === 0" class="medal gold">🥇</span>
-                <span v-else-if="index === 1" class="medal silver">🥈</span>
-                <span v-else-if="index === 2" class="medal bronze">🥉</span>
-                <span v-else class="rank-num">{{ index + 1 }}</span>
+                <span v-if="((leaderboardPage - 1) * 10) + index === 0" class="medal gold">🥇</span>
+                <span v-else-if="((leaderboardPage - 1) * 10) + index === 1" class="medal silver">🥈</span>
+                <span v-else-if="((leaderboardPage - 1) * 10) + index === 2" class="medal bronze">🥉</span>
+                <span v-else class="rank-num">{{ ((leaderboardPage - 1) * 10) + index + 1 }}</span>
               </div>
               <div class="leaderboard-user-info">
                 <div class="leaderboard-user-row">
@@ -477,6 +477,23 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Leaderboard Pagination -->
+          <div v-if="topTwentyLeaderboard.length > 10" class="pagination-container" style="margin-top: 15px;">
+            <van-pagination
+              v-model="leaderboardPage"
+              :total-items="topTwentyLeaderboard.length"
+              :items-per-page="10"
+              force-ellipses
+            >
+              <template #prev-text>
+                <van-icon name="arrow-left" />
+              </template>
+              <template #next-text>
+                <van-icon name="arrow" />
+              </template>
+            </van-pagination>
           </div>
         </div>
       </section>
@@ -803,10 +820,11 @@ export default {
       showEditDialog: false,
       editTargetOldName: '',
       editTargetNewName: '',
-      leaderboardScope: 'all', // 'all' or 'month'
+      leaderboardScope: 'month', // 'all' or 'month'
       leaderboardMode: 'easy',  // 'easy' or 'hard'
       currentPage: 1,
       currentRectifyPage: 1,
+      leaderboardPage: 1,
       ignoredGroups: [],
       currentCalendarFilter: 'all'
     };
@@ -1107,7 +1125,7 @@ export default {
       const linePart = this.chartPoints.map(pt => `L ${pt.x} ${pt.y}`).join(' ');
       return `M ${first.x} 190 ${linePart} L ${last.x} 190 Z`;
     },
-    topTenLeaderboard() {
+    topTwentyLeaderboard() {
       const scope = this.leaderboardScope;
       const year = this.currentYear;
       const month = this.currentMonth;
@@ -1173,7 +1191,7 @@ export default {
         })
         .filter(u => u.attempts > 0);
 
-      // 4. Sort and return top 10
+      // 4. Sort and return top 20
       if (this.leaderboardMode === 'easy') {
         // Most Easy to steal (High success rate desc, then high success count desc)
         return list.sort((a, b) => {
@@ -1181,7 +1199,7 @@ export default {
             return b.successRate - a.successRate;
           }
           return b.success - a.success;
-        }).slice(0, 10);
+        }).slice(0, 20);
       } else {
         // Hardest to steal (Low success rate asc, then high fail count desc)
         return list.sort((a, b) => {
@@ -1189,8 +1207,12 @@ export default {
             return a.successRate - b.successRate;
           }
           return b.fail - a.fail;
-        }).slice(0, 10);
+        }).slice(0, 20);
       }
+    },
+    displayedLeaderboard() {
+      const start = (this.leaderboardPage - 1) * 10;
+      return this.topTwentyLeaderboard.slice(start, start + 10);
     },
     suggestedCorrectionGroups() {
       const users = this.analyzedUsers.map(u => ({
@@ -1248,6 +1270,18 @@ export default {
     },
     suggestedCorrectionGroups() {
       this.currentRectifyPage = 1;
+    },
+    leaderboardScope() {
+      this.leaderboardPage = 1;
+    },
+    leaderboardMode() {
+      this.leaderboardPage = 1;
+    },
+    currentMonth() {
+      this.leaderboardPage = 1;
+    },
+    currentYear() {
+      this.leaderboardPage = 1;
     }
   },
   created() {
