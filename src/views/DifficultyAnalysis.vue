@@ -3496,6 +3496,11 @@ export default {
       font-size: 13px;
       font-weight: 600;
       transition: all 0.2s;
+      flex: 0 0 auto;
+      min-width: 36px;
+      height: 36px;
+      padding: 0 10px;
+      box-sizing: border-box;
 
       &.van-pagination__item--active {
         color: #ffffff;
