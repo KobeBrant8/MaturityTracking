@@ -1458,6 +1458,7 @@ export default {
   },
   created() {
     this.loadAndAnalyzeData();
+    this.loadTheftRecords();
   },
   methods: {
     loadAndAnalyzeData() {
