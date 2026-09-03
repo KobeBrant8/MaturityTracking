@@ -498,6 +498,95 @@
         </div>
       </section>
 
+      <!-- Theft Records Module -->
+      <section class="theft-section glass" id="card-theft-records">
+        <div class="calendar-header-wrapper">
+          <h2 class="section-title">被偷记录</h2>
+          <span class="theft-add-btn" @click="openAddThiefDialog">
+            <van-icon name="plus" /> 新增偷家
+          </span>
+        </div>
+        <p class="section-subtitle">记录偷您菜的用户并标记被偷次数，点击右侧 ＋1 / －1 可快速打卡或撤销。</p>
+
+        <div class="theft-summary-grid">
+          <div class="theft-stat-card" id="card-theft-total">
+            <span class="ts-value">{{ theftTotalCount }}</span>
+            <span class="ts-label">被偷总次数</span>
+          </div>
+          <div class="theft-stat-card" id="card-theft-thieves">
+            <span class="ts-value">{{ thiefCount }}</span>
+            <span class="ts-label">偷家数量</span>
+          </div>
+          <div class="theft-stat-card" id="card-theft-top">
+            <span class="ts-value text-ellipsis" :title="topThief ? topThief.name : '暂无'">
+              {{ topThief ? topThief.name : '暂无' }}
+            </span>
+            <span class="ts-label">偷得最勤</span>
+          </div>
+        </div>
+
+        <div class="thief-list-wrapper">
+          <div v-if="sortedTheftRecords.length === 0" class="theft-empty-state">
+            <van-icon name="warning-o" class="empty-icon" />
+            <span class="empty-text">暂无被偷记录，点击右上角「新增偷家」开始记录</span>
+          </div>
+
+          <div v-else class="thief-cards">
+            <div
+              v-for="rec in displayedTheftRecords"
+              :key="rec.id"
+              class="thief-card"
+              :class="getTheftLevelInfo(rec.count).key"
+            >
+              <div class="thief-avatar" :style="{ background: getTheftAvatarGradient(rec.count) }">
+                {{ rec.name.charAt(0) }}
+              </div>
+
+              <div class="thief-info">
+                <div class="thief-name-row">
+                  <span class="thief-name">{{ rec.name }}</span>
+                  <span class="theft-level-badge" :class="getTheftLevelInfo(rec.count).key">
+                    {{ getTheftLevelInfo(rec.count).text }}
+                  </span>
+                </div>
+                <div class="thief-meta">最近被偷: {{ rec.lastTime || '暂无记录' }}</div>
+              </div>
+
+              <div class="thief-count-control">
+                <span
+                  class="count-btn minus"
+                  :class="{ disabled: rec.count <= 0 }"
+                  @click="markTheft(rec, -1)"
+                >−</span>
+                <span class="count-value">{{ rec.count }}</span>
+                <span class="count-btn plus" @click="markTheft(rec, 1)">＋</span>
+              </div>
+
+              <div class="thief-actions">
+                <van-icon name="edit" class="action-edit" @click="openEditThiefDialog(rec)" />
+                <van-icon name="delete-o" class="action-delete" @click="deleteThief(rec)" />
+              </div>
+            </div>
+          </div>
+
+          <div v-if="sortedTheftRecords.length > 5" class="pagination-container">
+            <van-pagination
+              v-model="theftPage"
+              :total-items="sortedTheftRecords.length"
+              :items-per-page="5"
+              force-ellipses
+            >
+              <template #prev-text>
+                <van-icon name="arrow-left" />
+              </template>
+              <template #next-text>
+                <van-icon name="arrow" />
+              </template>
+            </van-pagination>
+          </div>
+        </div>
+      </section>
+
       <!-- 3. Search and User List -->
       <section class="user-list-section glass" id="card-users-list">
         <div class="calendar-header-wrapper">
@@ -774,6 +863,62 @@
         </div>
       </div>
     </van-popup>
+
+    <!-- Theft Record Add/Edit Popup -->
+    <van-popup
+      v-model="showTheftDialog"
+      round
+      position="center"
+      class="theft-popup"
+      :close-on-click-overlay="false"
+    >
+      <div class="theft-popup-container">
+        <div class="theft-popup-header">
+          <van-icon :name="theftDialogMode === 'add' ? 'add-o' : 'edit'" class="header-icon" />
+          <span class="header-title">{{ theftDialogMode === 'add' ? '新增偷家' : '编辑偷家' }}</span>
+          <p class="header-subtitle">记录偷您菜的用户，并标记其累计被偷次数</p>
+        </div>
+
+        <div class="theft-popup-body">
+          <div class="input-wrapper">
+            <span class="input-label">用户名称</span>
+            <div class="custom-field-container">
+              <van-icon name="contact" class="field-icon" />
+              <input
+                v-model="theftForm.name"
+                type="text"
+                class="custom-field-input"
+                placeholder="请输入用户名"
+                maxlength="20"
+                ref="theftField"
+                @keyup.enter="confirmTheftDialog"
+              />
+            </div>
+          </div>
+
+          <div class="input-wrapper">
+            <span class="input-label">被偷次数</span>
+            <div class="count-stepper">
+              <span class="stepper-btn" @click="decrementFormCount">−</span>
+              <input
+                v-model.number="theftForm.count"
+                type="number"
+                min="0"
+                class="stepper-input"
+              />
+              <span class="stepper-btn plus-btn" @click="incrementFormCount">＋</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="theft-popup-footer">
+          <button class="footer-btn btn-cancel" @click="showTheftDialog = false">取消</button>
+          <button class="footer-btn btn-confirm" @click="confirmTheftDialog">
+            {{ theftDialogMode === 'add' ? '确认新增' : '保存修改' }}
+          </button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -781,6 +926,7 @@
 import { Icon, Empty, Toast, Dialog, Field, Popup, Pagination } from 'vant';
 
 const STORAGE_KEY = 'maturity_tracking_data';
+const THEFT_STORAGE_KEY = 'maturity_theft_records';
 
 export default {
   name: 'DifficultyAnalysis',
@@ -826,7 +972,13 @@ export default {
       currentRectifyPage: 1,
       leaderboardPage: 1,
       ignoredGroups: [],
-      currentCalendarFilter: 'all'
+      currentCalendarFilter: 'all',
+      theftRecords: [],
+      showTheftDialog: false,
+      theftDialogMode: 'add',
+      theftEditTargetId: null,
+      theftForm: { name: '', count: 1 },
+      theftPage: 1
     };
   },
   computed: {
@@ -1259,6 +1411,26 @@ export default {
       }
       
       return groups;
+    },
+    theftTotalCount() {
+      return this.theftRecords.reduce((sum, r) => sum + (r.count || 0), 0);
+    },
+    thiefCount() {
+      return this.theftRecords.length;
+    },
+    sortedTheftRecords() {
+      return [...this.theftRecords].sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.name.localeCompare(b.name, 'zh-CN');
+      });
+    },
+    topThief() {
+      const candidates = this.sortedTheftRecords.filter(r => r.count > 0);
+      return candidates.length > 0 ? candidates[0] : null;
+    },
+    displayedTheftRecords() {
+      const start = (this.theftPage - 1) * 5;
+      return this.sortedTheftRecords.slice(start, start + 5);
     }
   },
   watch: {
@@ -1767,6 +1939,126 @@ export default {
       const paddingLeft = 40;
       const chartWidth = 440;
       return paddingLeft + (dayNum - 1) * (chartWidth / (totalDays - 1));
+    },
+    loadTheftRecords() {
+      try {
+        const saved = localStorage.getItem(THEFT_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          this.theftRecords = Array.isArray(parsed) ? parsed : [];
+        }
+      } catch (e) {
+        console.error('加载被偷记录失败:', e);
+      }
+    },
+    saveTheftRecords() {
+      try {
+        localStorage.setItem(THEFT_STORAGE_KEY, JSON.stringify(this.theftRecords));
+      } catch (e) {
+        console.error('保存被偷记录失败:', e);
+        this.$toast.fail('保存失败，请重试');
+      }
+    },
+    openAddThiefDialog() {
+      this.theftDialogMode = 'add';
+      this.theftEditTargetId = null;
+      this.theftForm = { name: '', count: 1 };
+      this.showTheftDialog = true;
+      this.$nextTick(() => {
+        if (this.$refs.theftField) {
+          this.$refs.theftField.focus();
+        }
+      });
+    },
+    openEditThiefDialog(rec) {
+      this.theftDialogMode = 'edit';
+      this.theftEditTargetId = rec.id;
+      this.theftForm = { name: rec.name, count: rec.count };
+      this.showTheftDialog = true;
+    },
+    incrementFormCount() {
+      this.theftForm.count = (parseInt(this.theftForm.count, 10) || 0) + 1;
+    },
+    decrementFormCount() {
+      const val = parseInt(this.theftForm.count, 10) || 0;
+      if (val > 0) this.theftForm.count = val - 1;
+    },
+    confirmTheftDialog() {
+      const name = (this.theftForm.name || '').trim();
+      if (!name) {
+        this.$toast.fail('请输入用户名');
+        return;
+      }
+
+      let count = parseInt(this.theftForm.count, 10);
+      if (isNaN(count) || count < 0) count = 0;
+
+      const duplicate = this.theftRecords.find(r => r.name === name && r.id !== this.theftEditTargetId);
+      if (duplicate) {
+        this.$toast.fail('该用户已存在');
+        return;
+      }
+
+      if (this.theftDialogMode === 'add') {
+        this.theftRecords.push({
+          id: Date.now(),
+          name,
+          count,
+          lastTime: count > 0 ? this.getNowTimeString() : ''
+        });
+        this.$toast.success('新增成功');
+      } else {
+        const target = this.theftRecords.find(r => r.id === this.theftEditTargetId);
+        if (target) {
+          target.name = name;
+          target.count = count;
+          if (count === 0) target.lastTime = '';
+        }
+        this.$toast.success('修改成功');
+      }
+
+      this.saveTheftRecords();
+      this.showTheftDialog = false;
+    },
+    markTheft(rec, delta) {
+      if (delta > 0) {
+        rec.count++;
+        rec.lastTime = this.getNowTimeString();
+        this.saveTheftRecords();
+      } else {
+        if (rec.count <= 0) return;
+        rec.count--;
+        if (rec.count === 0) rec.lastTime = '';
+        this.saveTheftRecords();
+      }
+    },
+    deleteThief(rec) {
+      Dialog.confirm({
+        title: '删除偷家',
+        message: `确定要删除 "${rec.name}" 的被偷记录吗？删除后不可恢复。`,
+        confirmButtonColor: '#f43f5e'
+      }).then(() => {
+        this.theftRecords = this.theftRecords.filter(r => r.id !== rec.id);
+        this.saveTheftRecords();
+        this.$toast.success('已删除');
+      }).catch(() => {});
+    },
+    getTheftLevelInfo(count) {
+      if (count >= 5) return { key: 'danger', text: '高风险' };
+      if (count >= 3) return { key: 'warn', text: '需关注' };
+      if (count >= 1) return { key: 'normal', text: '偶发' };
+      return { key: 'zero', text: '无记录' };
+    },
+    getTheftAvatarGradient(count) {
+      if (count >= 5) return 'linear-gradient(135deg, #f87171 0%, #f43f5e 100%)';
+      if (count >= 3) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+      if (count >= 1) return 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)';
+      return 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)';
+    },
+    getNowTimeString() {
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
   }
 };
@@ -3518,6 +3810,471 @@ export default {
       
       &:active:not(.van-pagination__item--disabled):not(.van-pagination__item--active) {
         background-color: #f5f3ff;
+      }
+    }
+  }
+}
+
+/* Theft Records Section styling */
+.theft-section {
+  margin-top: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .section-subtitle {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.5;
+    margin: -6px 0 0 0;
+    text-align: left;
+  }
+}
+
+.theft-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #fb923c 0%, #f43f5e 100%);
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:active {
+    transform: scale(0.95);
+    box-shadow: 0 1px 4px rgba(244, 63, 94, 0.2);
+  }
+}
+
+.theft-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.theft-stat-card {
+  background: rgba(255, 247, 237, 0.75);
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+
+  .ts-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: #ea580c;
+    max-width: 100%;
+    line-height: 1.2;
+  }
+
+  .ts-label {
+    font-size: 10px;
+    color: #9a3412;
+    font-weight: 500;
+  }
+}
+
+.theft-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  gap: 8px;
+
+  .empty-icon {
+    font-size: 32px;
+    color: #f59e0b;
+  }
+
+  .empty-text {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+    text-align: center;
+  }
+}
+
+.thief-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thief-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+  }
+
+  &.zero { border-left: 4px solid #cbd5e1; }
+  &.normal { border-left: 4px solid #38bdf8; }
+  &.warn { border-left: 4px solid #f59e0b; }
+  &.danger { border-left: 4px solid #f43f5e; }
+}
+
+.thief-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.thief-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .thief-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .thief-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .theft-level-badge {
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+
+    &.zero { background-color: #f3f4f6; color: #4b5563; }
+    &.normal { background-color: #e0f2fe; color: #0369a1; }
+    &.warn { background-color: #fef3c7; color: #b45309; }
+    &.danger { background-color: #ffe4e6; color: #b91c1c; }
+  }
+
+  .thief-meta {
+    font-size: 10px;
+    color: #94a3b8;
+  }
+}
+
+.thief-count-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 3px;
+  flex-shrink: 0;
+
+  .count-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+    line-height: 1;
+
+    &.minus {
+      color: #64748b;
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+
+      &.disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+    }
+
+    &.plus {
+      color: #ffffff;
+      background: linear-gradient(135deg, #fb923c 0%, #f43f5e 100%);
+      box-shadow: 0 2px 6px rgba(244, 63, 94, 0.3);
+    }
+
+    &:active {
+      transform: scale(0.88);
+    }
+  }
+
+  .count-value {
+    min-width: 22px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+}
+
+.thief-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+
+  .van-icon {
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+
+    &:active {
+      transform: scale(0.85);
+    }
+  }
+
+  .action-edit {
+    color: #1d4ed8;
+  }
+
+  .action-delete {
+    color: #f43f5e;
+  }
+}
+
+/* Theft Popup styling */
+.theft-popup {
+  width: 85%;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+
+  .theft-popup-container {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .theft-popup-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+
+    .header-icon {
+      font-size: 24px;
+      color: #f43f5e;
+      background-color: #ffe4e6;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .header-subtitle {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.4;
+      margin: 0;
+    }
+  }
+
+  .theft-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .input-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .custom-field-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #ffffff;
+    border: 2.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 42px;
+    transition: all 0.2s ease;
+
+    .field-icon {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+
+    .custom-field-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      height: 100%;
+      background: transparent;
+      padding: 0;
+      min-width: 0;
+
+      &::placeholder {
+        color: #cbd5e1;
+        font-weight: 400;
+      }
+    }
+
+    &:focus-within {
+      border-color: #f43f5e;
+      box-shadow: 0 0 0 3.5px rgba(244, 63, 94, 0.12);
+
+      .field-icon {
+        color: #f43f5e;
+      }
+    }
+  }
+
+  .count-stepper {
+    display: flex;
+    align-items: stretch;
+    height: 42px;
+    background-color: #ffffff;
+    border: 2.5px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+
+    .stepper-btn {
+      width: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      color: #64748b;
+      background-color: #f1f5f9;
+
+      &.plus-btn {
+        color: #ffffff;
+        background: linear-gradient(135deg, #fb923c 0%, #f43f5e 100%);
+      }
+
+      &:active {
+        filter: brightness(0.92);
+      }
+    }
+
+    .stepper-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e293b;
+      background: transparent;
+      min-width: 0;
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    }
+
+    &:focus-within {
+      border-color: #f43f5e;
+      box-shadow: 0 0 0 3.5px rgba(244, 63, 94, 0.12);
+    }
+  }
+
+  .theft-popup-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .footer-btn {
+    flex: 1;
+    height: 40px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &.btn-cancel {
+      color: #64748b;
+      background-color: #f1f5f9;
+
+      &:active {
+        background-color: #e2e8f0;
+      }
+    }
+
+    &.btn-confirm {
+      color: #ffffff;
+      background: linear-gradient(135deg, #fb923c 0%, #f43f5e 100%);
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25);
+
+      &:active {
+        transform: scale(0.98);
+        box-shadow: 0 2px 6px rgba(244, 63, 94, 0.2);
       }
     }
   }
